@@ -233,10 +233,10 @@ function main()
     death_rate = birth_rate/4 
     n₀ = 1 
     critical_size = 30
-    δ = .7
+    δ = .6
     simulation_time = 6*24 # En horas (13 días)
-    n_simulations = 100_000
-    bin_width = 100
+    n_simulations = 10_000
+    bin_width = 1
     
 
     # times, populations = birth_death_processes(n₀, birth_rate, death_rate, simulation_time, n_simulations)
@@ -252,7 +252,7 @@ function main()
     ccdf = 1 .- cumsum(distribution)
     plot2 = plot(N[ccdf .> 0],
                 ccdf[ccdf.> 0],
-                xlim=(0, 2e5),
+                xlim=(0, 1e3),
                 xlabel="Population Size [Cell number]",
                 ylabel="Fraction of cells",
                 legend=:topright,
