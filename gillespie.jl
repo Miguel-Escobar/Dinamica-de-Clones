@@ -102,7 +102,7 @@ function modified_birth_death(n₀, birth_rate, death_rate, critical_size, δ, s
             birth_propensity = population[end]*birth_rate
             death_propensity = population[end]*death_rate   
         else
-            birth_propensity = population[end]*(birth_rate + δ)
+            birth_propensity = population[end]*(birth_rate*(1 + δ))
             death_propensity = population[end]*death_rate
         end
 
@@ -223,7 +223,7 @@ end
 Just creates a canvas to plot nicely (enough).
 """
 function canvas()
-    return plot(xlabel="Time", ylabel="Population Size", yscale=:log10, legend=:bottomright)
+    return plot(xlabel="Time [Hrs]", ylabel="Size [Cell Count]", yscale=:log10, legend=:bottomright)
 end
 
 
@@ -233,11 +233,22 @@ function main()
     death_rate = birth_rate/4 
     n₀ = 1 
     critical_size = 30
-    δ = .6
-    simulation_time = 6*24 # En horas (13 días)
+    δ = 2
+    simulation_time = 13*24 # En horas (13 días)
     n_simulations = 10_000
     bin_width = 1
     
+    #Bonito gráfico de ccdf:
+
+    # birth_rate = 1/82 # En 1/Horas
+    # death_rate = birth_rate/4 
+    # n₀ = 1 
+    # critical_size = 30
+    # δ = .05
+    # simulation_time = 7*24 # En horas (13 días)
+    # n_simulations = 10_000
+    # bin_width = 1
+
 
     # times, populations = birth_death_processes(n₀, birth_rate, death_rate, simulation_time, n_simulations)
     times, populations = modified_birth_death_processes(n₀, birth_rate, death_rate, critical_size, δ, simulation_time, n_simulations)
@@ -246,19 +257,23 @@ function main()
 
     plot1 = canvas()
     plot!(plot1, x -> n₀*exp((birth_rate-death_rate)*x), 0, simulation_time, label="n₀*exp((birth_rate-death_rate)*x))")
-    plot!(plot1, sample_times, averages, label="Simulation Averages")
+    plot!(plot1, sample_times, averages, label="Simulation Average")
 
     N, distribution = system_size_distribution(simulation_time-1, bin_width, times, populations)
     ccdf = 1 .- cumsum(distribution)
     plot2 = plot(N[ccdf .> 0],
                 ccdf[ccdf.> 0],
-                xlim=(0, 1e3),
+                xlim=(0, 500),
+                ylim=(4e-2, 1),
                 xlabel="Population Size [Cell number]",
-                ylabel="Fraction of cells",
-                legend=:topright,
+                ylabel="CCDF",
+                #legend=:topright,
                 yscale=:log10,
-                st=:steppost
+                st=:steppost,
+                label=nothing,
             )
+            
+    display(plot2)
     savefig(plot1, "Comparison.png")
     savefig(plot2, "Distribution.png")
 end
