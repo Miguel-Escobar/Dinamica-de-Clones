@@ -1,6 +1,6 @@
 using Random
 using Plots
-
+using ProgressBars
 """
 Performs a stochastic simulation of a birth-death process using the Gillespie algorithm.
 
@@ -66,7 +66,7 @@ Performs n_simulations of a birth-death process using the Gillespie algorithm.
 function birth_death_processes(n₀, birth_rate, death_rate, simulation_time, n_simulations)
     times = Vector{Float64}[]
     populations = Vector{Int}[]
-    for i in 1:n_simulations
+    for i in ProgressBar(1:n_simulations)
         t, p = birth_death(n₀, birth_rate, death_rate, simulation_time)
         push!(times, t)
         push!(populations, p)
@@ -91,7 +91,7 @@ using the Gillespie algorithm.
 - t: an array of times at which an event took place.
 - population: an array of population sizes at times t.
 """
-function modified_birth_death(n₀, birth_rate, death_rate, critical_size, δ, simulation_time; max_steps=1_000_000)
+function modified_birth_death(n₀, birth_rate, death_rate, critical_size, δ, simulation_time; max_steps=10_000_000)
 
     times = Float64[0.]
     population = Int[n₀]
@@ -151,7 +151,7 @@ Performs n_simulations of a birth-death process with birth rate that changes at 
 function modified_birth_death_processes(n₀, birth_rate, death_rate, critical_size, δ, simulation_time, n_simulations)
     times = Vector{Float64}[]
     populations = Vector{Int}[]
-    for i in 1:n_simulations
+    for i in ProgressBar(1:n_simulations)
         t, p = modified_birth_death(n₀, birth_rate, death_rate, critical_size, δ, simulation_time)
         push!(times, t)
         push!(populations, p)
@@ -183,6 +183,8 @@ function simulation_averages(sample_times, times, populations)
     end
     return averages
 end
+
+
 """
 Helper function, returns the population size at time t, even when t is not the time at which an event took place.
 """
@@ -196,7 +198,10 @@ function element_at_time(t, time, population)
 end
 
 
-
+"""
+Returns the system size distribution at time t. Note that this isn't precisely a histogram.
+This should be improved!
+"""
 function system_size_distribution(t, bin_width::Int,times, populations)
     n = length(populations)
     max_size = maximum(x->maximum(x), populations) + 1
@@ -211,7 +216,7 @@ function system_size_distribution(t, bin_width::Int,times, populations)
     end
 
     
-    return [k-1 for k in 1:nbins], binned_distribution
+    return [(k-1)*bin_width for k in 1:nbins], binned_distribution./sum(binned_distribution)
 end
 
 """
@@ -224,14 +229,15 @@ end
 
 function main()
 
-    birth_rate = 0.6
-    death_rate = 0.3
-    n₀ = 1
-    critical_size = 70
-    δ = 0.3
-    simulation_time = 10
+    birth_rate = 1/82 # En 1/Horas
+    death_rate = birth_rate/4 
+    n₀ = 1 
+    critical_size = 30
+    δ = .7
+    simulation_time = 6*24 # En horas (13 días)
     n_simulations = 100_000
-    bin_width = 6
+    bin_width = 100
+    
 
     # times, populations = birth_death_processes(n₀, birth_rate, death_rate, simulation_time, n_simulations)
     times, populations = modified_birth_death_processes(n₀, birth_rate, death_rate, critical_size, δ, simulation_time, n_simulations)
@@ -243,8 +249,16 @@ function main()
     plot!(plot1, sample_times, averages, label="Simulation Averages")
 
     N, distribution = system_size_distribution(simulation_time-1, bin_width, times, populations)
-    plot2 = plot(N[distribution.>0], distribution[distribution.>0], xlabel="System Size", legend=:topright, yscale=:log10, st=:steppost)
-
-    display(plot1)
-    display(plot2)
+    ccdf = 1 .- cumsum(distribution)
+    plot2 = plot(N[ccdf .> 0],
+                ccdf[ccdf.> 0],
+                xlim=(0, 2e5),
+                xlabel="Population Size [Cell number]",
+                ylabel="Fraction of cells",
+                legend=:topright,
+                yscale=:log10,
+                st=:steppost
+            )
+    savefig(plot1, "Comparison.png")
+    savefig(plot2, "Distribution.png")
 end
