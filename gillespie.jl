@@ -1,6 +1,7 @@
 using Random
 using Plots
 using ProgressBars
+
 """
 Performs a stochastic simulation of a birth-death process using the Gillespie algorithm.
 
@@ -237,18 +238,6 @@ function main()
     simulation_time = 13*24 # En horas (13 días)
     n_simulations = 10_000
     bin_width = 1
-    
-    #Bonito gráfico de ccdf:
-
-    # birth_rate = 1/82 # En 1/Horas
-    # death_rate = birth_rate/4 
-    # n₀ = 1 
-    # critical_size = 30
-    # δ = .05
-    # simulation_time = 7*24 # En horas (13 días)
-    # n_simulations = 10_000
-    # bin_width = 1
-
 
     # times, populations = birth_death_processes(n₀, birth_rate, death_rate, simulation_time, n_simulations)
     times, populations = modified_birth_death_processes(n₀, birth_rate, death_rate, critical_size, δ, simulation_time, n_simulations)
@@ -263,16 +252,15 @@ function main()
     ccdf = 1 .- cumsum(distribution)
     plot2 = plot(N[ccdf .> 0],
                 ccdf[ccdf.> 0],
-                xlim=(0, 500),
-                ylim=(4e-2, 1),
+                #xlim=(0, 500),
+                #ylim=(1e-4, 1),
                 xlabel="Population Size [Cell number]",
                 ylabel="CCDF",
-                #legend=:topright,
                 yscale=:log10,
                 st=:steppost,
                 label=nothing,
             )
-            
+    
     display(plot2)
     savefig(plot1, "Comparison.png")
     savefig(plot2, "Distribution.png")
