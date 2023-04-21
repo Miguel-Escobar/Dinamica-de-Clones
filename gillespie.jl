@@ -228,6 +228,27 @@ function canvas()
 end
 
 
+"""
+Let's try to make an animation of the system size distribution.
+"""
+function animate_ccdf(time_array, times, populations)
+    bin_width = 1
+    animation = @animate for t in time_array
+        n, dist = system_size_distribution(t, bin_width, times, populations)
+        ccdf = 1 .- cumsum(dist)
+        plot(n[ccdf.>0], ccdf[ccdf.>0],
+            label="t = $t",
+            xlabel="Size [Cell Count]",
+            ylabel="CCDF",
+            yscale=:log10,
+            legend=:bottomright,
+            xlim=(0, 5000),
+            ylim=(1e-4, 1))
+    end
+    gif(animation)
+end
+
+
 function main()
 
     birth_rate = 1/82 # En 1/Horas
@@ -250,10 +271,11 @@ function main()
 
     N, distribution = system_size_distribution(simulation_time-1, bin_width, times, populations)
     ccdf = 1 .- cumsum(distribution)
+
     plot2 = plot(N[ccdf .> 0],
                 ccdf[ccdf.> 0],
                 #xlim=(0, 500),
-                #ylim=(1e-4, 1),
+                #ylim=(1e-2, 1),
                 xlabel="Population Size [Cell number]",
                 ylabel="CCDF",
                 yscale=:log10,
@@ -264,4 +286,7 @@ function main()
     display(plot2)
     savefig(plot1, "Comparison.png")
     savefig(plot2, "Distribution.png")
+
+    time_array = LinRange(0, simulation_time, 180)
+    animate_ccdf(time_array, times, populations)
 end
