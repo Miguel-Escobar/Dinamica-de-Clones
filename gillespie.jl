@@ -1,6 +1,7 @@
 using Random
 using Plots
 using ProgressBars
+using LaTeXStrings
 
 """
 Performs a stochastic simulation of a birth-death process using the Gillespie algorithm.
@@ -215,16 +216,36 @@ function system_size_distribution(t, bin_width::Int,times, populations)
     for i in 1:(nbins-1)
         binned_distribution[i] = sum(distribution[i*bin_width:(i+1)*bin_width])
     end
-
-    
     return [(k-1)*bin_width for k in 1:nbins], binned_distribution./sum(binned_distribution)
 end
+
+
+"""
+This just takes in a clone size and time and returns the value of the ccdf at time t and clone size ncells.
+NT is a vector of the form [ncells, t].
+"""
+function model(NT, params)
+    δ = params[0] 
+    birth_rate = params[1] 
+    death_rate = params[2]  
+    critical_size = params[3]
+    n₀ = params[4]  # Maybe I'll just set it to one.
+
+    ncells = NT[1]
+    t = NT[2]
+    times, populations = modified_birth_death_processes(n₀, birth_rate, death_rate, critical_size, δ, NT, 1000)
+    ccdf = 1 .- cumsum(system_size_distribution(t, 1, times, populations)[2])
+    
+    return ccdf[ncells + 1]
+end
+
+
 
 """
 Just creates a canvas to plot nicely (enough).
 """
 function canvas()
-    return plot(xlabel="Time [Hrs]", ylabel="Size [Cell Count]", yscale=:log10, legend=:bottomright)
+    return plot(xlabel="Time [Hrs]", ylabel="Size [Cell Count]", yscale=:log10, legend=:bottomright, dpi=600)
 end
 
 
@@ -243,10 +264,13 @@ function animate_ccdf(time_array, times, populations)
             yscale=:log10,
             legend=:bottomright,
             xlim=(0, 5000),
-            ylim=(1e-4, 1))
+            ylim=(1e-4, 1),
+            dpi=600)
     end
     gif(animation)
 end
+
+
 
 
 function main()
@@ -260,13 +284,13 @@ function main()
     n_simulations = 10_000
     bin_width = 1
 
-    # times, populations = birth_death_processes(n₀, birth_rate, death_rate, simulation_time, n_simulations)
     times, populations = modified_birth_death_processes(n₀, birth_rate, death_rate, critical_size, δ, simulation_time, n_simulations)
     sample_times = LinRange(0, simulation_time, 100)
     averages = simulation_averages(sample_times, times, populations)
 
+    
     plot1 = canvas()
-    plot!(plot1, x -> n₀*exp((birth_rate-death_rate)*x), 0, simulation_time, label="n₀*exp((birth_rate-death_rate)*x))")
+    plot!(plot1, x -> n₀*exp((birth_rate-death_rate)*x), 0, simulation_time, label=L"$n_0e^{(r-m)x}$")
     plot!(plot1, sample_times, averages, label="Simulation Average")
 
     N, distribution = system_size_distribution(simulation_time-1, bin_width, times, populations)
@@ -282,11 +306,10 @@ function main()
                 st=:steppost,
                 label=nothing,
             )
-    
-    display(plot2)
+    display(plot1)
     savefig(plot1, "Comparison.png")
-    savefig(plot2, "Distribution.png")
+    #savefig(plot2, "Distribution.png")
 
-    time_array = LinRange(0, simulation_time, 180)
-    animate_ccdf(time_array, times, populations)
+    #time_array = LinRange(0, simulation_time, 180)
+    #animate_ccdf(time_array, times, populations)
 end
