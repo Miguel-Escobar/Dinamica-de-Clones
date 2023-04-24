@@ -2,6 +2,7 @@ using Random
 using Plots
 using ProgressBars
 using LaTeXStrings
+using LsqFit
 
 """
 Performs a stochastic simulation of a birth-death process using the Gillespie algorithm.
@@ -221,22 +222,23 @@ end
 
 
 """
-This just takes in a clone size and time and returns the value of the ccdf at time t and clone size ncells.
-NT is a vector of the form [ncells, t].
+I'm not quite sure. This should be the model I'm working with.
 """
-function model(NT, params)
-    δ = params[0] 
-    birth_rate = params[1] 
-    death_rate = params[2]  
-    critical_size = params[3]
-    n₀ = params[4]  # Maybe I'll just set it to one.
-
-    ncells = NT[1]
-    t = NT[2]
-    times, populations = modified_birth_death_processes(n₀, birth_rate, death_rate, critical_size, δ, NT, 1000)
-    ccdf = 1 .- cumsum(system_size_distribution(t, 1, times, populations)[2])
-    
-    return ccdf[ncells + 1]
+function model(N, params; t=13*24)
+    δ = params[1] 
+    birth_rate = 1/82#params[2] 
+    death_rate = 1/(82*4)#params[3]  
+    critical_size = params[2]
+    n₀ = 1  # Maybe I'll just set it to one.
+    times, populations = modified_birth_death_processes(n₀, birth_rate, death_rate, critical_size, δ, t + 1, 1000)
+    n, dist = system_size_distribution(t, 1, times, populations)
+    ccdf = 1 .- cumsum(dist)
+    index = [findfirst(x -> x >= ncells, n) for ncells in N]
+    if index !== nothing
+        return ccdf[index]
+    else
+        return 0
+    end
 end
 
 
@@ -265,7 +267,7 @@ function animate_ccdf(time_array, times, populations)
             legend=:bottomright,
             xlim=(0, 5000),
             ylim=(1e-4, 1),
-            dpi=600)
+            dpi=300)
     end
     gif(animation)
 end
@@ -288,28 +290,37 @@ function main()
     sample_times = LinRange(0, simulation_time, 100)
     averages = simulation_averages(sample_times, times, populations)
 
-    
-    plot1 = canvas()
-    plot!(plot1, x -> n₀*exp((birth_rate-death_rate)*x), 0, simulation_time, label=L"$n_0e^{(r-m)x}$")
-    plot!(plot1, sample_times, averages, label="Simulation Average")
+    # Probamos el fiteo:
 
-    N, distribution = system_size_distribution(simulation_time-1, bin_width, times, populations)
-    ccdf = 1 .- cumsum(distribution)
+    N = 1:1000
+    ydata = model(N, [δ, critical_size]; t = 13*24)
+    fit = curve_fit(model, N, ydata, [δ * 1/2, critical_size*1/2])
+    print(coef(fit), [δ, critical_size]) # ¿Por qué no cambia los parametros?
 
-    plot2 = plot(N[ccdf .> 0],
-                ccdf[ccdf.> 0],
-                #xlim=(0, 500),
-                #ylim=(1e-2, 1),
-                xlabel="Population Size [Cell number]",
-                ylabel="CCDF",
-                yscale=:log10,
-                st=:steppost,
-                label=nothing,
-            )
-    display(plot1)
-    savefig(plot1, "Comparison.png")
-    #savefig(plot2, "Distribution.png")
 
-    #time_array = LinRange(0, simulation_time, 180)
-    #animate_ccdf(time_array, times, populations)
+    # plot1 = canvas()
+    # plot!(plot1, x -> n₀*exp((birth_rate-death_rate)*x), 0, simulation_time, label=L"$n_0e^{(r-m)x}$")
+    # plot!(plot1, sample_times, averages, label="Simulation Average")
+
+    # N, distribution = system_size_distribution(simulation_time-1, bin_width, times, populations)
+    # ccdf = 1 .- cumsum(distribution)
+
+    # plot2 = plot(N[ccdf .> 0],
+    #             ccdf[ccdf.> 0],
+    #             #xlim=(0, 500),
+    #             #ylim=(1e-2, 1),
+    #             xlabel="Population Size [Cell number]",
+    #             ylabel="CCDF",
+    #             yscale=:log10,
+    #             st=:steppost,
+    #             label=nothing,
+    #         )
+    # display(plot1)
+    # savefig(plot1, "Comparison.png")
+    # savefig(plot2, "Distribution.png")
+
+    # time_array = LinRange(0, simulation_time, 180)
+    # animate_ccdf(time_array, times, populations)
+
+
 end
