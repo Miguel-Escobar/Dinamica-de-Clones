@@ -4,79 +4,79 @@ using ProgressBars
 using LaTeXStrings
 using LsqFit
 
-"""
-Performs a stochastic simulation of a birth-death process using the Gillespie algorithm.
+# """
+# Performs a stochastic simulation of a birth-death process using the Gillespie algorithm.
 
-# Args:
-- n₀ = initial population size
-- birth_rate
-- death_rate
-- simulation_time
+# # Args:
+# - n₀ = initial population size
+# - birth_rate
+# - death_rate
+# - simulation_time
 
-# Returns:
-- t: an array of times at which an event took place.
-- population: an array of population sizes at times t.
-"""
-function birth_death(n₀, birth_rate, death_rate, simulation_time; max_steps=1_000_000)
-    times = Float64[0.]
-    population = Int[n₀]
-    nstep = 0 
-    while nstep < max_steps && times[end] < simulation_time
-        birth_propensity = population[end]*birth_rate
-        death_propensity = population[end]*death_rate   
-        α = birth_propensity + death_propensity
+# # Returns:
+# - t: an array of times at which an event took place.
+# - population: an array of population sizes at times t.
+# """
+# function birth_death(n₀, birth_rate, death_rate, simulation_time; max_steps=1_000_000)
+#     times = Float64[0.]
+#     population = Int[n₀]
+#     nstep = 0 
+#     while nstep < max_steps && times[end] < simulation_time
+#         birth_propensity = population[end]*birth_rate
+#         death_propensity = population[end]*death_rate   
+#         α = birth_propensity + death_propensity
 
-        r₁ = 1 - rand()
-        r₂ = 1 - rand()
+#         r₁ = 1 - rand()
+#         r₂ = 1 - rand()
 
-        τ = (1/α)*log(1/r₁)
+#         τ = (1/α)*log(1/r₁)
 
-        if r₂*α < birth_propensity
-            push!(population, population[end] + 1)
-        elseif population[end] == 0
-            push!(population, population[end])
-        else
-            push!(population, population[end] - 1)
-        end
+#         if r₂*α < birth_propensity
+#             push!(population, population[end] + 1)
+#         elseif population[end] == 0
+#             push!(population, population[end])
+#         else
+#             push!(population, population[end] - 1)
+#         end
         
-        push!(times, times[end] + τ)
-        nstep += 1
-    end
+#         push!(times, times[end] + τ)
+#         nstep += 1
+#     end
 
-    if nstep == max_steps
-        println("Warning: max number of steps reached. Simulation did not reach final time.")
-    end
+#     if nstep == max_steps
+#         println("Warning: max number of steps reached. Simulation did not reach final time.")
+#     end
 
-    return times, population
+#     return times, population
 
-end
+# end
 
 
-"""
-Performs n_simulations of a birth-death process using the Gillespie algorithm.
+# """
+# Performs n_simulations of a birth-death process using the Gillespie algorithm.
 
-# Arguments
-- n₀ = initial population size
-- birth_rate
-- death_rate
-- simulation_time
-- n_simulations
+# # Arguments
+# - n₀ = initial population size
+# - birth_rate
+# - death_rate
+# - simulation_time
+# - n_simulations
 
-# Returns
-- times: an array of arrays of times at which an event took place.
-- populations: an array of arrays of population sizes at times t.
-"""
-function birth_death_processes(n₀, birth_rate, death_rate, simulation_time, n_simulations)
-    times = Vector{Float64}[]
-    populations = Vector{Int}[]
-    for i in ProgressBar(1:n_simulations)
-        t, p = birth_death(n₀, birth_rate, death_rate, simulation_time)
-        push!(times, t)
-        push!(populations, p)
-    end
-    println(typeof(times), typeof(populations))
-    return times, populations
-end
+# # Returns
+# - times: an array of arrays of times at which an event took place.
+# - populations: an array of arrays of population sizes at times t.
+# """
+# function birth_death_processes(n₀, birth_rate, death_rate, simulation_time, n_simulations)
+#     times = Vector{Float64}[]
+#     populations = Vector{Int}[]
+#     for i in ProgressBar(1:n_simulations)
+#         t, p = birth_death(n₀, birth_rate, death_rate, simulation_time)
+#         push!(times, t)
+#         push!(populations, p)
+#     end
+#     println(typeof(times), typeof(populations))
+#     return times, populations
+# end
 
 """
 Performs a stochastic simulation of a birth-death process with birth rate that changes at a critical size
@@ -94,7 +94,7 @@ using the Gillespie algorithm.
 - t: an array of times at which an event took place.
 - population: an array of population sizes at times t.
 """
-function modified_birth_death(n₀, birth_rate, death_rate, critical_size, δ, simulation_time; max_steps=10_000_000)
+function modified_birth_death(n₀, birth_rate, death_rate, critical_size, δ, simulation_time; max_steps=100_000_000)
 
     times = Float64[0.]
     population = Int[n₀]
@@ -190,6 +190,7 @@ end
 
 """
 Helper function, returns the population size at time t, even when t is not the time at which an event took place.
+Time is an array of times at which an event took place, population is an array of population sizes at times in time.
 """
 function element_at_time(t, time, population)
     index = findfirst(x -> x > t, time)
@@ -220,27 +221,59 @@ function system_size_distribution(t, bin_width::Int,times, populations)
     return [(k-1)*bin_width for k in 1:nbins], binned_distribution./sum(binned_distribution)
 end
 
+"""
+Returns the complementary cumulative distribution function of the system size distribution at time t.
+"""
+function ccdfunc(t, times, populations)
+    n, dist = system_size_distribution(t, 1, times, populations)
+    return n, 1 .- cumsum(dist)
+end
+    
+
+# """
+# I'm not quite sure. This should be the model I'm working with.
+# """
+# function model(N, params; t=13*24)
+#     δ = params[1] 
+#     birth_rate = 1/82#params[2] 
+#     death_rate = 1/(82*4)#params[3]  
+#     critical_size = params[2]
+#     n₀ = 1  # Maybe I'll just set it to one.
+#     times, populations = modified_birth_death_processes(n₀, birth_rate, death_rate, critical_size, δ, t + 1, 1000)
+#     n, dist = system_size_distribution(t, 1, times, populations)
+#     ccdf = 1 .- cumsum(dist)
+#     index = [findfirst(x -> x >= ncells, n) for ncells in N]
+#     print(ccdf[index][ccdf[index] .< 0])
+#     if index !== nothing
+#         return log.(ccdf[index])
+#     else
+#         return 0
+#     end
+# end
+
 
 """
-I'm not quite sure. This should be the model I'm working with.
+Let's try to write a better model.
 """
-function model(N, params; t=13*24)
-    δ = params[1] 
-    birth_rate = 1/82#params[2] 
-    death_rate = 1/(82*4)#params[3]  
-    critical_size = params[2]
-    n₀ = 1  # Maybe I'll just set it to one.
-    times, populations = modified_birth_death_processes(n₀, birth_rate, death_rate, critical_size, δ, t + 1, 1000)
-    n, dist = system_size_distribution(t, 1, times, populations)
-    ccdf = 1 .- cumsum(dist)
-    index = [findfirst(x -> x >= ncells, n) for ncells in N]
-    if index !== nothing
-        return ccdf[index]
+function logmodel(N, params; t=13*24)
+    δ = params[1]
+    n_crit = params[2]
+    birth_rate = 1/82
+    death_rate = 1/(82*4)
+    n₀ = 1
+    times, populations = modified_birth_death_processes(n₀, birth_rate, death_rate, n_crit, δ, t, 10_000)
+    n, ccdf = ccdfunc(t, times, populations)
+    n = n[ccdf .> 0]
+    ccdf = ccdf[ccdf .> 0]
+    indexes = [findfirst(x -> x >= ncells, n) for ncells in N]
+    valid_indexes = indexes[indexes .!= nothing]
+    
+    if length(valid_indexes) > 0
+        return log.(ccdf[valid_indexes])
     else
-        return 0
+        return -Inf
     end
 end
-
 
 
 """
@@ -280,24 +313,28 @@ function main()
     birth_rate = 1/82 # En 1/Horas
     death_rate = birth_rate/4 
     n₀ = 1 
-    critical_size = 30
-    δ = 2
+    critical_size = 30.0
+    δ = 2.0
     simulation_time = 13*24 # En horas (13 días)
     n_simulations = 10_000
     bin_width = 1
 
-    times, populations = modified_birth_death_processes(n₀, birth_rate, death_rate, critical_size, δ, simulation_time, n_simulations)
-    sample_times = LinRange(0, simulation_time, 100)
-    averages = simulation_averages(sample_times, times, populations)
+    # times, populations = modified_birth_death_processes(n₀, birth_rate, death_rate, critical_size, δ, simulation_time, n_simulations)
+    # sample_times = LinRange(0, simulation_time, 100)
+    # averages = simulation_averages(sample_times, times, populations)
 
     # Probamos el fiteo:
 
-    N = 1:1000
-    ydata = model(N, [δ, critical_size]; t = 13*24)
-    fit = curve_fit(model, N, ydata, [δ * 1/2, critical_size*1/2])
-    print(coef(fit), [δ, critical_size]) # ¿Por qué no cambia los parametros?
+    N = 40:1000
+    weights = [10_000.0 for n in N]
+    ydata = logmodel(N, [δ, critical_size]; t = 13*24)
+    fit = curve_fit(logmodel, N, ydata, weights, [δ / 2, critical_size/2], lower=[0.001, 0.001], upper=[10.0, 100.0])
+    println(coef(fit), [δ, critical_size]) # ¿Por qué no cambia los parametros?
+    println(standard_errors(fit))
 
-
+    test = plot(N, ydata, label="Data")
+    plot!(test, N, logmodel(N, fit.param), label="Fit")
+    display(test)
     # plot1 = canvas()
     # plot!(plot1, x -> n₀*exp((birth_rate-death_rate)*x), 0, simulation_time, label=L"$n_0e^{(r-m)x}$")
     # plot!(plot1, sample_times, averages, label="Simulation Average")
