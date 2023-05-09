@@ -88,7 +88,7 @@ function modified_birth_death_processes(n₀, birth_rate, death_rate, critical_s
         push!(times, t)
         push!(populations, p)
     end
-    println("Simulations completed.")
+
     return times, populations
 end
 
@@ -212,10 +212,7 @@ function fit_model(Ndata, logdata, guess)
 
     #optimize(params -> optmodel(params, [Ndata, logdata]), guess, SimulatedAnnealing())
 
-    sol = Optim.optimize(params -> optmodel(params, [Ndata, logdata]), [0., 10.], [4., 50.], guess, SAMIN(), Optim.Options(
-        iterations=100,
-        f_tol = 0.2,
-        x_tol = 0.1))
+    sol = Optim.optimize(params -> optmodel(params, [Ndata, logdata]), [0., 10.], [3., 50.], guess, SAMIN(), Optim.Options(iterations=500))
     return sol
 end
 
