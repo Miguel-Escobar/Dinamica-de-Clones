@@ -3,80 +3,9 @@ using Plots
 using ProgressBars
 using LaTeXStrings
 using LsqFit
+using Optimization
+using Optim
 
-# """
-# Performs a stochastic simulation of a birth-death process using the Gillespie algorithm.
-
-# # Args:
-# - n₀ = initial population size
-# - birth_rate
-# - death_rate
-# - simulation_time
-
-# # Returns:
-# - t: an array of times at which an event took place.
-# - population: an array of population sizes at times t.
-# """
-# function birth_death(n₀, birth_rate, death_rate, simulation_time; max_steps=1_000_000)
-#     times = Float64[0.]
-#     population = Int[n₀]
-#     nstep = 0 
-#     while nstep < max_steps && times[end] < simulation_time
-#         birth_propensity = population[end]*birth_rate
-#         death_propensity = population[end]*death_rate   
-#         α = birth_propensity + death_propensity
-
-#         r₁ = 1 - rand()
-#         r₂ = 1 - rand()
-
-#         τ = (1/α)*log(1/r₁)
-
-#         if r₂*α < birth_propensity
-#             push!(population, population[end] + 1)
-#         elseif population[end] == 0
-#             push!(population, population[end])
-#         else
-#             push!(population, population[end] - 1)
-#         end
-        
-#         push!(times, times[end] + τ)
-#         nstep += 1
-#     end
-
-#     if nstep == max_steps
-#         println("Warning: max number of steps reached. Simulation did not reach final time.")
-#     end
-
-#     return times, population
-
-# end
-
-
-# """
-# Performs n_simulations of a birth-death process using the Gillespie algorithm.
-
-# # Arguments
-# - n₀ = initial population size
-# - birth_rate
-# - death_rate
-# - simulation_time
-# - n_simulations
-
-# # Returns
-# - times: an array of arrays of times at which an event took place.
-# - populations: an array of arrays of population sizes at times t.
-# """
-# function birth_death_processes(n₀, birth_rate, death_rate, simulation_time, n_simulations)
-#     times = Vector{Float64}[]
-#     populations = Vector{Int}[]
-#     for i in ProgressBar(1:n_simulations)
-#         t, p = birth_death(n₀, birth_rate, death_rate, simulation_time)
-#         push!(times, t)
-#         push!(populations, p)
-#     end
-#     println(typeof(times), typeof(populations))
-#     return times, populations
-# end
 
 """
 Performs a stochastic simulation of a birth-death process with birth rate that changes at a critical size
@@ -228,44 +157,23 @@ function ccdfunc(t, times, populations)
     n, dist = system_size_distribution(t, 1, times, populations)
     return n, 1 .- cumsum(dist)
 end
-    
-
-# """
-# I'm not quite sure. This should be the model I'm working with.
-# """
-# function model(N, params; t=13*24)
-#     δ = params[1] 
-#     birth_rate = 1/82#params[2] 
-#     death_rate = 1/(82*4)#params[3]  
-#     critical_size = params[2]
-#     n₀ = 1  # Maybe I'll just set it to one.
-#     times, populations = modified_birth_death_processes(n₀, birth_rate, death_rate, critical_size, δ, t + 1, 1000)
-#     n, dist = system_size_distribution(t, 1, times, populations)
-#     ccdf = 1 .- cumsum(dist)
-#     index = [findfirst(x -> x >= ncells, n) for ncells in N]
-#     print(ccdf[index][ccdf[index] .< 0])
-#     if index !== nothing
-#         return log.(ccdf[index])
-#     else
-#         return 0
-#     end
-# end
 
 
 """
-Let's try to write a better model.
+Returns the values at sizes N of the log of the complementary cumulative distribution function of the system size distribution at time t.
+This should be improved! As to not depend on parameters birth_rate, death_rate, and n₀.
 """
-function logmodel(N, params; t=13*24)
+function logmodel(Ndata, params; t=13*24)
     δ = params[1]
     n_crit = params[2]
     birth_rate = 1/82
     death_rate = 1/(82*4)
     n₀ = 1
-    times, populations = modified_birth_death_processes(n₀, birth_rate, death_rate, n_crit, δ, t, 100_000)
+    times, populations = modified_birth_death_processes(n₀, birth_rate, death_rate, n_crit, δ, t, 1_000)
     n, ccdf = ccdfunc(t, times, populations)
     n = n[ccdf .> 0]
     ccdf = ccdf[ccdf .> 0]
-    indexes = [findfirst(x -> x >= ncells, n) for ncells in N]
+    indexes = [findfirst(x -> x >= ncells, n) for ncells in Ndata]
     valid_indexes = indexes[indexes .!= nothing]
     
     if length(valid_indexes) > 0
@@ -274,6 +182,37 @@ function logmodel(N, params; t=13*24)
         return -Inf
     end
 end
+
+"""
+Define the optimization model to feed into Optim.jl. Params is the variable to minimize. Data is the
+data to fit to, as an array of the form [Ndata, logdata], where N is the array of sizes and logdata is the
+array of log of the complementary cumulative distribution function of the system size distribution at time t.
+"""
+function optmodel(params, data)
+    Ndata = data[1]
+    logdata = data[2]
+    squares = (logmodel(Ndata, params; t=13*24) - logdata).^2
+    returnable = sum(squares)
+    # if returnable == Inf
+    #     returnable = 1e10
+    # end  # Recomendación de Github Copilot que ojalá no necesite.
+    return returnable
+end
+
+"""
+Performs fitting of the model to data, hopefully. Currently, not working :)
+"""
+function fit_model(Ndata, logdata, guess)
+    # problem = OptimizationProblem(optmodel, guess, [Ndata, logdata])
+    # sol = solve(problem,)
+    # return sol.minimizer
+    sol = optimize(params -> optmodel(params, [Ndata, logdata]), guess)
+    return sol
+end
+
+
+
+
 
 
 """
@@ -325,16 +264,21 @@ function main()
 
     # Probamos el fiteo:
 
-    N = 10:1000
-    ydata = logmodel(N, [δ, critical_size]; t = 13*24)
-    fit = curve_fit(logmodel, N, ydata, [δ / 2, critical_size/2], lower=[0.001, 0.001], upper=[10.0, 100.0])
+    Ndata = 10:1000
+    ydata = logmodel(Ndata, [δ, critical_size]; t = 13*24)
+    guess = [δ+0.5, critical_size-10]
+    fit = fit_model(Ndata, ydata, guess)
+    println(fit, [δ, critical_size])
+    return fit
+    # fit = curve_fit(logmodel, N, ydata, [δ / 2, critical_size/2], lower=[0.001, 0.001], upper=[10.0, 100.0])
     
-    println(coef(fit), [δ, critical_size])
-    println(standard_errors(fit))
+    # println(coef(fit), [δ, critical_size])
+    # println(standard_errors(fit))
 
-    test = plot(N, ydata, label="Data")
-    plot!(test, N, logmodel(N, fit.param), label="Fit")
-    display(test)
+    # test = plot(N, ydata, label="Data")
+    # plot!(test, N, logmodel(N, fit.param), label="Fit")
+    # display(test)
+
 
     # plot1 = canvas()
     # plot!(plot1, x -> n₀*exp((birth_rate-death_rate)*x), 0, simulation_time, label=L"$n_0e^{(r-m)x}$")
