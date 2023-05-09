@@ -81,12 +81,25 @@ Performs n_simulations of a birth-death process with birth rate that changes at 
 - populations: an array of arrays of population sizes at times t.
 """
 function modified_birth_death_processes(n₀, birth_rate, death_rate, critical_size, δ, simulation_time, n_simulations)
+    
     times = Vector{Float64}[]
     populations = Vector{Int}[]
-    for i in ProgressBar(1:n_simulations)
+
+    # We want each thread to fill it's own list, to avoid data racing:
+    temp_times = [Vector{Float64}[] for i in 1:Threads.nthreads()]  
+    temp_populations = [Vector{Float64}[] for i in 1:Threads.nthreads()]
+
+    Threads.@threads for i in ProgressBar(1:n_simulations)
+        id = Threads.threadid()
         t, p = modified_birth_death(n₀, birth_rate, death_rate, critical_size, δ, simulation_time)
-        push!(times, t)
-        push!(populations, p)
+        push!(temp_times[id], t)
+        push!(temp_populations[id], p)
+    end
+
+    # Now we need to concatenate the lists:
+    for i in 1:Threads.nthreads()
+        append!(times, temp_times[i])
+        append!(populations, temp_populations[i])
     end
 
     return times, populations
@@ -109,7 +122,7 @@ Calculates the average population size at each time in sample_times.
 function simulation_averages(sample_times, times, populations)
     averages = zeros(length(sample_times))
     for (i, time) in enumerate(sample_times)
-        for j in 1:length(populations) 
+        for j in 1:length(populations) # Deprecated. Should be replaced.
             averages[i] += element_at_time(time, times[j], populations[j])
         end
         averages[i] /= length(populations)
