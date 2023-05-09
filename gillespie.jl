@@ -58,7 +58,7 @@ function modified_birth_death(n₀, birth_rate, death_rate, critical_size, δ, s
     end
 
     if nstep == max_steps
-        println("Warning: max number of steps reached. Simulation did not reach final time.")
+        print("Warning: max number of steps reached. Simulation did not reach final time.")
     end
 
     return times, population
@@ -83,11 +83,12 @@ Performs n_simulations of a birth-death process with birth rate that changes at 
 function modified_birth_death_processes(n₀, birth_rate, death_rate, critical_size, δ, simulation_time, n_simulations)
     times = Vector{Float64}[]
     populations = Vector{Int}[]
-    for i in ProgressBar(1:n_simulations)
+    for i in 1:n_simulations
         t, p = modified_birth_death(n₀, birth_rate, death_rate, critical_size, δ, simulation_time)
         push!(times, t)
         push!(populations, p)
     end
+    print("Simulations completed.")
     return times, populations
 end
 
@@ -169,7 +170,7 @@ function logmodel(Ndata, params; t=13*24)
     birth_rate = 1/82
     death_rate = 1/(82*4)
     n₀ = 1
-    times, populations = modified_birth_death_processes(n₀, birth_rate, death_rate, n_crit, δ, t, 1_000)
+    times, populations = modified_birth_death_processes(n₀, birth_rate, death_rate, n_crit, δ, t, 10_000)
     n, ccdf = ccdfunc(t, times, populations)
     n = n[ccdf .> 0]
     ccdf = ccdf[ccdf .> 0]
@@ -177,9 +178,9 @@ function logmodel(Ndata, params; t=13*24)
     valid_indexes = indexes[indexes .!= nothing]
     
     if length(valid_indexes) > 0
-        return log.(ccdf[valid_indexes])
+        return [log.(ccdf[valid_indexes]); [-Inf for i in indexes if i ∉ valid_indexes]]
     else
-        return -Inf
+        return [-Inf for i in indexes]
     end
 end
 
@@ -200,13 +201,18 @@ function optmodel(params, data)
 end
 
 """
-Performs fitting of the model to data, hopefully. Currently, not working :)
+Performs fitting of the model to data, hopefully. Currently barely working I guess :)
 """
 function fit_model(Ndata, logdata, guess)
     # problem = OptimizationProblem(optmodel, guess, [Ndata, logdata])
     # sol = solve(problem,)
     # return sol.minimizer
-    sol = optimize(params -> optmodel(params, [Ndata, logdata]), guess)
+
+    # sol = optimize(params -> optmodel(params, [Ndata, logdata]), guess)
+
+    #optimize(params -> optmodel(params, [Ndata, logdata]), guess, SimulatedAnnealing())
+
+    sol = Optim.optimize(params -> optmodel(params, [Ndata, logdata]), [0., 10.], [4., 50.], guess, SAMIN(), Optim.Options(iterations=500))
     return sol
 end
 
@@ -264,21 +270,22 @@ function main()
 
     # Probamos el fiteo:
 
-    Ndata = 10:1000
+    Ndata = 10:500
     ydata = logmodel(Ndata, [δ, critical_size]; t = 13*24)
-    guess = [δ+0.5, critical_size-10]
+    guess = [0.5, 11]
     fit = fit_model(Ndata, ydata, guess)
     println(fit, [δ, critical_size])
-    return fit
-    # fit = curve_fit(logmodel, N, ydata, [δ / 2, critical_size/2], lower=[0.001, 0.001], upper=[10.0, 100.0])
+
+    # fit = curve_fit(logmodel, N, ydata, [δ / 2, critical_size/2], lower=[0.001, 0.001], upper=[10.0, 50.0])
     
     # println(coef(fit), [δ, critical_size])
     # println(standard_errors(fit))
 
-    # test = plot(N, ydata, label="Data")
-    # plot!(test, N, logmodel(N, fit.param), label="Fit")
-    # display(test)
+    test = plot(Ndata, ydata, label="Data")
+    plot!(test, Ndata, logmodel(Ndata, fit.minimizer), label="Fit")
+    display(test)
 
+    return fit
 
     # plot1 = canvas()
     # plot!(plot1, x -> n₀*exp((birth_rate-death_rate)*x), 0, simulation_time, label=L"$n_0e^{(r-m)x}$")
@@ -306,3 +313,4 @@ function main()
 
 
 end
+
