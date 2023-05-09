@@ -147,7 +147,7 @@ end
 
 """
 Returns the system size distribution at time t. Note that this isn't precisely a histogram.
-This should be improved!
+This should be improved! It's easy to multi-thread I think.
 """
 function system_size_distribution(t, bin_width::Int,times, populations)
     n = length(populations)
