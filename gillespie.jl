@@ -261,7 +261,7 @@ function logmodel(N, params; t=13*24)
     birth_rate = 1/82
     death_rate = 1/(82*4)
     n₀ = 1
-    times, populations = modified_birth_death_processes(n₀, birth_rate, death_rate, n_crit, δ, t, 10_000)
+    times, populations = modified_birth_death_processes(n₀, birth_rate, death_rate, n_crit, δ, t, 100_000)
     n, ccdf = ccdfunc(t, times, populations)
     n = n[ccdf .> 0]
     ccdf = ccdf[ccdf .> 0]
@@ -325,16 +325,17 @@ function main()
 
     # Probamos el fiteo:
 
-    N = 40:1000
-    weights = [10_000.0 for n in N]
+    N = 10:1000
     ydata = logmodel(N, [δ, critical_size]; t = 13*24)
-    fit = curve_fit(logmodel, N, ydata, weights, [δ / 2, critical_size/2], lower=[0.001, 0.001], upper=[10.0, 100.0])
-    println(coef(fit), [δ, critical_size]) # ¿Por qué no cambia los parametros?
+    fit = curve_fit(logmodel, N, ydata, [δ / 2, critical_size/2], lower=[0.001, 0.001], upper=[10.0, 100.0])
+    
+    println(coef(fit), [δ, critical_size])
     println(standard_errors(fit))
 
     test = plot(N, ydata, label="Data")
     plot!(test, N, logmodel(N, fit.param), label="Fit")
     display(test)
+
     # plot1 = canvas()
     # plot!(plot1, x -> n₀*exp((birth_rate-death_rate)*x), 0, simulation_time, label=L"$n_0e^{(r-m)x}$")
     # plot!(plot1, sample_times, averages, label="Simulation Average")
