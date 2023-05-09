@@ -83,12 +83,12 @@ Performs n_simulations of a birth-death process with birth rate that changes at 
 function modified_birth_death_processes(n₀, birth_rate, death_rate, critical_size, δ, simulation_time, n_simulations)
     times = Vector{Float64}[]
     populations = Vector{Int}[]
-    for i in 1:n_simulations
+    for i in ProgressBar(1:n_simulations)
         t, p = modified_birth_death(n₀, birth_rate, death_rate, critical_size, δ, simulation_time)
         push!(times, t)
         push!(populations, p)
     end
-    print("Simulations completed.")
+    println("Simulations completed.")
     return times, populations
 end
 
@@ -212,7 +212,10 @@ function fit_model(Ndata, logdata, guess)
 
     #optimize(params -> optmodel(params, [Ndata, logdata]), guess, SimulatedAnnealing())
 
-    sol = Optim.optimize(params -> optmodel(params, [Ndata, logdata]), [0., 10.], [4., 50.], guess, SAMIN(), Optim.Options(iterations=500))
+    sol = Optim.optimize(params -> optmodel(params, [Ndata, logdata]), [0., 10.], [4., 50.], guess, SAMIN(), Optim.Options(
+        iterations=100,
+        f_tol = 0.2,
+        x_tol = 0.1))
     return sol
 end
 
