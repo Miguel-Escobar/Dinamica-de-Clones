@@ -1,5 +1,5 @@
 # Dinamica-de-Clones
-Repositorio asociado al ramo Introducción a la Investigación. ¡Probablemente no sea buen código!
+Repositorio asociado al ramo Introducción a la Investigación. ¡Probablemente el código no sea de la mejor calidad/legibilidad! Cualquier duda u aporte a miguescobarm@gmail.com.
 
 ## Objetivos
 
