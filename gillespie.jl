@@ -152,10 +152,19 @@ This should be improved! It's easy to multi-thread I think.
 function system_size_distribution(t, bin_width::Int,times, populations)
     n = length(populations)
     max_size = maximum(x->maximum(x), populations) + 1
-    distribution = zeros(max_size)
-    for i in 1:n
-        distribution[element_at_time(t, times[i], populations[i])+1] += 1
+    tempdistribution = [zeros(max_size) for thread in 1:Threads.nthreads()] # This is to avoid data-racing
+    Threads.@threads for i in 1:n
+        threadnumber = Threads.threadid()
+        tempdistribution[threadnumber][element_at_time(t, times[i], populations[i])+1] += 1
     end
+    
+    distribution = zeros(max_size)
+    for threadnumber in 1:Threads.nthreads()
+        distribution = distribution .+ tempdistribution[threadnumber]
+    end
+        
+
+    
     nbins = floor(Int, max_size/bin_width)
     binned_distribution = zeros(nbins)
     for i in 1:(nbins-1)
@@ -225,7 +234,7 @@ function fit_model(Ndata, logdata, guess)
 
     #optimize(params -> optmodel(params, [Ndata, logdata]), guess, SimulatedAnnealing())
 
-    sol = Optim.optimize(params -> optmodel(params, [Ndata, logdata]), [0., 10.], [3., 50.], guess, SAMIN(), Optim.Options(iterations=500))
+    sol = Optim.optimize(params -> optmodel(params, [Ndata, logdata]), [0., 10.], [3., 50.], guess, SAMIN(), Optim.Options(iterations=1_000))
     return sol
 end
 
