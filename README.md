@@ -3,5 +3,5 @@ Repositorio asociado al ramo Introducción a la Investigación. Cualquier duda u
 
 ## Objetivos
 
-Evaluar distintas hipótesis de modelos estocásticos para los datos en data. Código escrito en Julia.
+Evaluar distintas hipótesis de modelos estocásticos para los datos en data.
 
