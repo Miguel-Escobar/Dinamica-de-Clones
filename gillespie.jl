@@ -1,186 +1,7 @@
-using Random
-using Plots
-using ProgressBars
-using LaTeXStrings
-using LsqFit
-using Optimization
 using Optim
-
-
-"""
-Performs a stochastic simulation of a birth-death process with birth rate that changes at a critical size
-using the Gillespie algorithm.
-
-# Arguments:
-- n₀ = initial population size.
-- birth_rate.
-- death_rate.
-- critical_size: the population size at which the birth rate changes.
-- δ: the change in birth rate given as (1+δ)*birth_rate.
-- simulation_time
-
-# Returns:
-- t: an array of times at which an event took place.
-- population: an array of population sizes at times t.
-"""
-function modified_birth_death(n₀, birth_rate, death_rate, critical_size, δ, simulation_time; max_steps=100_000_000)
-
-    times = Float64[0.]
-    population = Int[n₀]
-    nstep = 0 
-
-    while nstep < max_steps && times[end] < simulation_time
-        if population[end] < critical_size
-            birth_propensity = population[end]*birth_rate
-            death_propensity = population[end]*death_rate   
-        else
-            birth_propensity = population[end]*(birth_rate*(1 + δ))
-            death_propensity = population[end]*death_rate
-        end
-
-        α = birth_propensity + death_propensity
-
-        r₁ = 1 - rand()
-        r₂ = 1 - rand()
-
-        τ = (1/α)*log(1/r₁)
-
-        if r₂*α < birth_propensity
-            push!(population, population[end] + 1)
-        elseif population[end] == 0
-            push!(population, population[end])
-        else
-            push!(population, population[end] - 1)
-        end
-        
-        push!(times, times[end] + τ)
-        nstep += 1
-    end
-
-    if nstep == max_steps
-        print("Warning: max number of steps reached. Simulation did not reach final time.")
-    end
-
-    return times, population
-end
-
-"""
-Performs n_simulations of a birth-death process with birth rate that changes at a critical size.
-
-# Arguments
-- n₀ = initial population size
-- birth_rate
-- death_rate
-- critical_size: the population size at which the birth rate changes.
-- δ: the change in birth rate given as (1+δ)*birth_rate.
-- simulation_time
-- n_simulations
-
-# Returns
-- times: an array of arrays of times at which an event took place.
-- populations: an array of arrays of population sizes at times t.
-"""
-function modified_birth_death_processes(n₀, birth_rate, death_rate, critical_size, δ, simulation_time, n_simulations)
-    
-    times = Vector{Float64}[]
-    populations = Vector{Int}[]
-
-    # We want each thread to fill it's own list, to avoid data racing:
-    temp_times = [Vector{Float64}[] for i in 1:Threads.nthreads()]  
-    temp_populations = [Vector{Float64}[] for i in 1:Threads.nthreads()]
-
-    Threads.@threads for i in ProgressBar(1:n_simulations)
-        id = Threads.threadid()
-        t, p = modified_birth_death(n₀, birth_rate, death_rate, critical_size, δ, simulation_time)
-        push!(temp_times[id], t)
-        push!(temp_populations[id], p)
-    end
-
-    # Now we need to concatenate the lists:
-    for i in 1:Threads.nthreads()
-        append!(times, temp_times[i])
-        append!(populations, temp_populations[i])
-    end
-
-    return times, populations
-end
-
-
-"""
-Calculates the average population size at each time in sample_times.
-
-# Arguments
-
-- sample_times: an array of times at which to calculate the average population size.
-- times: an array of arrays of times at which an event took place.
-- populations: an array of arrays of population sizes at times t.
-
-# Returns
-
-- averages: an array of average population sizes at times in sample_times.
-"""
-function simulation_averages(sample_times, times, populations)
-    averages = zeros(length(sample_times))
-    for (i, time) in enumerate(sample_times)
-        for j in 1:length(populations) # Deprecated. Should be replaced.
-            averages[i] += element_at_time(time, times[j], populations[j])
-        end
-        averages[i] /= length(populations)
-    end
-    return averages
-end
-
-
-"""
-Helper function, returns the population size at time t, even when t is not the time at which an event took place.
-Time is an array of times at which an event took place, population is an array of population sizes at times in time.
-"""
-function element_at_time(t, time, population)
-    index = findfirst(x -> x > t, time)
-    if index !== nothing
-        return population[max(index-1, 1)]
-    else
-        return population[end]
-    end
-end
-
-
-"""
-Returns the system size distribution at time t. Note that this isn't precisely a histogram.
-This should be improved! It's easy to multi-thread I think.
-"""
-function system_size_distribution(t, bin_width::Int,times, populations)
-    n = length(populations)
-    max_size = maximum(x->maximum(x), populations) + 1
-    tempdistribution = [zeros(max_size) for thread in 1:Threads.nthreads()] # This is to avoid data-racing
-    Threads.@threads for i in 1:n
-        threadnumber = Threads.threadid()
-        tempdistribution[threadnumber][element_at_time(t, times[i], populations[i])+1] += 1
-    end
-    
-    distribution = zeros(max_size)
-    for threadnumber in 1:Threads.nthreads()
-        distribution = distribution .+ tempdistribution[threadnumber]
-    end
-        
-
-    
-    nbins = floor(Int, max_size/bin_width)
-    binned_distribution = zeros(nbins)
-    for i in 1:(nbins-1)
-        binned_distribution[i] = sum(distribution[i*bin_width:(i+1)*bin_width])
-    end
-    return [(k-1)*bin_width for k in 1:nbins], binned_distribution./sum(binned_distribution)
-end
-
-"""
-Returns the complementary cumulative distribution function of the system size distribution at time t.
-"""
-function ccdfunc(t, times, populations)
-    n, dist = system_size_distribution(t, 1, times, populations)
-    return n, 1 .- cumsum(dist)
-end
-
+using Plots
+include("simulate_func.jl")
+include("analysis_func.jl")
 
 """
 Returns the values at sizes N of the log of the complementary cumulative distribution function of the system size distribution at time t.
@@ -216,9 +37,6 @@ function optmodel(params, data)
     logdata = data[2]
     squares = (logmodel(Ndata, params; t=13*24) - logdata).^2
     returnable = sum(squares)
-    # if returnable == Inf
-    #     returnable = 1e10
-    # end  # Recomendación de Github Copilot que ojalá no necesite.
     return returnable
 end
 
@@ -226,53 +44,9 @@ end
 Performs fitting of the model to data, hopefully. Currently barely working I guess :)
 """
 function fit_model(Ndata, logdata, guess)
-    # problem = OptimizationProblem(optmodel, guess, [Ndata, logdata])
-    # sol = solve(problem,)
-    # return sol.minimizer
-
-    # sol = optimize(params -> optmodel(params, [Ndata, logdata]), guess)
-
-    #optimize(params -> optmodel(params, [Ndata, logdata]), guess, SimulatedAnnealing())
-
-    sol = Optim.optimize(params -> optmodel(params, [Ndata, logdata]), [0., 10.], [3., 50.], guess, SAMIN(), Optim.Options(iterations=1_000))
+    sol = Optim.optimize(params -> optmodel(params, [Ndata, logdata]), [0., 10.], [3., 50.], guess, SAMIN(), Optim.Options(iterations=10_000))
     return sol
 end
-
-
-
-
-
-
-"""
-Just creates a canvas to plot nicely (enough).
-"""
-function canvas()
-    return plot(xlabel="Time [Hrs]", ylabel="Size [Cell Count]", yscale=:log10, legend=:bottomright, dpi=600)
-end
-
-
-"""
-Let's try to make an animation of the system size distribution.
-"""
-function animate_ccdf(time_array, times, populations)
-    bin_width = 1
-    animation = @animate for t in time_array
-        n, dist = system_size_distribution(t, bin_width, times, populations)
-        ccdf = 1 .- cumsum(dist)
-        plot(n[ccdf.>0], ccdf[ccdf.>0],
-            label="t = $t",
-            xlabel="Size [Cell Count]",
-            ylabel="CCDF",
-            yscale=:log10,
-            legend=:bottomright,
-            xlim=(0, 5000),
-            ylim=(1e-4, 1),
-            dpi=300)
-    end
-    gif(animation)
-end
-
-
 
 
 function main()
@@ -296,7 +70,6 @@ function main()
     ydata = logmodel(Ndata, [δ, critical_size]; t = 13*24)
     guess = [0.5, 11]
     fit = fit_model(Ndata, ydata, guess)
-    println(fit, [δ, critical_size])
 
     # fit = curve_fit(logmodel, N, ydata, [δ / 2, critical_size/2], lower=[0.001, 0.001], upper=[10.0, 50.0])
     
@@ -306,8 +79,7 @@ function main()
     test = plot(Ndata, ydata, label="Data")
     plot!(test, Ndata, logmodel(Ndata, fit.minimizer), label="Fit")
     display(test)
-
-    return fit
+    println(fit)
 
     # plot1 = canvas()
     # plot!(plot1, x -> n₀*exp((birth_rate-death_rate)*x), 0, simulation_time, label=L"$n_0e^{(r-m)x}$")
