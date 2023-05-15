@@ -1,4 +1,5 @@
 using XLSX
+using StatsBase
 """
 Calculates the average population size at each time in sample_times.
 
@@ -76,9 +77,25 @@ end
 
 function read_excel_data(datalocation)
     data = XLSX.readxlsx(datalocation)
-    raw = data["raw"]
-    for time_code in 1:8
-    end
+    timecodes = data["Tcode"]
+    clusterdata = data["idx"]
+    clusters_at_different_timecodes = [clusterdata[timecodes .== t] for t in unique(timecodes)]
+    clusters_at_different_timecodes= [countmap(clusters) for clusters in clusters_at_different_timecodes]
+    
+    times = []
+    populationsEGF = []
+    populationsnoEGF = []
+    for timecode in unique(timecodes)
+        time = [0, 3, 6, 13].* 24
+        if mod(timecode,2) == 0
+            
+
+        # for clustersize in clusters_at_different_timecodes[timecode]
+        #     nclusters = length(clustersize)
+            
+
+
+
 end
 
     
