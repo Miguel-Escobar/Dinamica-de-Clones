@@ -75,6 +75,11 @@ function ccdfunc(t, times, populations)
     return n, 1 .- cumsum(dist)
 end
 
+
+"""
+Reads .xlsm file in datalocation and returns arrays times, populations whose elements correspond to the evolution
+of a single clone at corresponding times. This is the same format the rest of the functions take in.
+"""
 function read_excel_data(datalocation)
     data = XLSX.readxlsx(datalocation)
     timecodes = data["Tcode"]
