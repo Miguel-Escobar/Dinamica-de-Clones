@@ -1,5 +1,6 @@
 using Optim
 using Plots
+using LaTeXStrings
 include("simulate_func.jl")
 include("analysis_func.jl")
 
@@ -68,18 +69,23 @@ function main()
 
     Ndata = 10:500
     ydata = logmodel(Ndata, [δ, critical_size]; t = 13*24)
-    guess = [0.5, 11]
-    fit = fit_model(Ndata, ydata, guess)
+    # guess = [0.5, 11]
+    # fit = fit_model(Ndata, ydata, guess)
 
-    # fit = curve_fit(logmodel, N, ydata, [δ / 2, critical_size/2], lower=[0.001, 0.001], upper=[10.0, 50.0])
-    
-    # println(coef(fit), [δ, critical_size])
-    # println(standard_errors(fit))
+    # test = plot(Ndata, ydata, label="Created Data", xlabel="Population Size [Cell number]", ylabel="Log CCDF")
+    # plot!(test, Ndata, logmodel(Ndata, fit.minimizer), label="Fit")
+    # savefig(test, "Fit_test.png")
+    # println(fit)
 
-    test = plot(Ndata, ydata, label="Data")
-    plot!(test, Ndata, logmodel(Ndata, fit.minimizer), label="Fit")
-    display(test)
-    println(fit)
+    # Now I will write a plot of the function to optimize while sweeping throw critical_size:
+
+    # critical_sizes = LinRange(20, 40, 81)
+    # δs = LinRange(1, 3, 100)
+
+    # return plot(δs, x -> optmodel([x, critical_size], [Ndata, ydata]), label=L"$n_{crit}= 30$", xlabel=L"$\delta$", ylabel="Optimization Function", legend=:topleft, dpi=600, fmt=:png)
+
+
+
 
     # plot1 = canvas()
     # plot!(plot1, x -> n₀*exp((birth_rate-death_rate)*x), 0, simulation_time, label=L"$n_0e^{(r-m)x}$")
