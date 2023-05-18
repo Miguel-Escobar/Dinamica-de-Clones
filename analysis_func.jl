@@ -92,9 +92,6 @@ function read_excel_data(datalocation)
 
         # for clustersize in clusters_at_different_timecodes[timecode]
         #     nclusters = length(clustersize)
-            
-
-
-
+        end
+    end
 end
-
