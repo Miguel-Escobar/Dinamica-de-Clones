@@ -75,23 +75,32 @@ function ccdfunc(t, times, populations)
     return n, 1 .- cumsum(dist)
 end
 
-function read_excel_data(datalocation)
-    data = XLSX.readxlsx(datalocation)
-    timecodes = data["Tcode"]
-    clusterdata = data["idx"]
-    clusters_at_different_timecodes = [clusterdata[timecodes .== t] for t in unique(timecodes)]
-    clusters_at_different_timecodes= [countmap(clusters) for clusters in clusters_at_different_timecodes]
-    
-    times = []
-    populationsEGF = []
-    populationsnoEGF = []
-    for timecode in unique(timecodes)
-        time = [0, 3, 6, 13].* 24
-        if mod(timecode,2) == 0
-            
 
-        # for clustersize in clusters_at_different_timecodes[timecode]
-        #     nclusters = length(clustersize)
+function read_excel_data(datalocation)
+    data = XLSX.readxlsx(datalocation)["raw"]
+    timecodes = convert(Vector{Int64}, data["L"][2:end])
+    clusterdata = convert(Vector{Int64},data["N"][2:end])
+    clusters_at_different_timecodes = [clusterdata[timecodes .== t] for t in unique(timecodes)]
+    println(clusters_at_different_timecodes[1])
+    clusters_at_different_timecodes = [counts(clusters) for clusters in clusters_at_different_timecodes]
+    max_size = maximum(maximum.(clusters_at_different_timecodes))
+
+    timecodes = unique(timecodes)
+    distributions = []
+    for cluster_sizes in clusters_at_different_timecodes
+        temp_distribution = zeros(max_size)
+        for i in 1:length(cluster_sizes)
+            if cluster_sizes[i]>0
+                temp_distribution[cluster_sizes[i]] += 1
+            end
         end
+        push!(distributions, temp_distribution./sum(temp_distribution))
     end
+    return timecodes, distributions
+end
+
+
+function read_ccdf_in_data(datalocation)
+    timecodes, distribution = read_excel_data(datalocation)
+    return timecodes, [1 .- cumsum(dist) for dist in distribution]
 end
