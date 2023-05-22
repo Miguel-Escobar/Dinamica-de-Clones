@@ -3,15 +3,6 @@ using LaTeXStrings
 
 
 """
-Just creates a canvas to plot nicely (enough).
-"""
-function canvas()
-    return plot(xlabel="Time [Hrs]", ylabel="Size [Cell Count]", yscale=:log10, legend=:bottomright, dpi=600)
-end
-
-
-
-"""
 Let's try to make an animation of the system size distribution.
 """
 function animate_ccdf(time_array, times, populations)
