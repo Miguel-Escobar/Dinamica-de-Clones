@@ -45,7 +45,7 @@ end
 Performs fitting of the model to data, hopefully. Currently barely working I guess :)
 """
 function fit_model(Ndata, logdata, guess)
-    sol = Optim.optimize(params -> optmodel(params, [Ndata, logdata]), [0., 10.], [3., 50.], guess, SAMIN(), Optim.Options(iterations=10_000))
+    sol = Optim.optimize(params -> optmodel(params, [Ndata, logdata]), [0., 10.], [3., 50.], guess, SAMIN(), Optim.Options(iterations=1000))
     return sol
 end
 
@@ -67,49 +67,18 @@ function main()
 
     # Probamos el fiteo:
 
-    Ndata = 10:500
-    ydata = logmodel(Ndata, [δ, critical_size]; t = 13*24)
-    # guess = [0.5, 11]
-    # fit = fit_model(Ndata, ydata, guess)
-
-    # test = plot(Ndata, ydata, label="Created Data", xlabel="Population Size [Cell number]", ylabel="Log CCDF")
-    # plot!(test, Ndata, logmodel(Ndata, fit.minimizer), label="Fit")
-    # savefig(test, "Fit_test.png")
-    # println(fit)
-
-    # Now I will write a plot of the function to optimize while sweeping throw critical_size:
-
-    # critical_sizes = LinRange(20, 40, 81)
-    # δs = LinRange(1, 3, 100)
-
-    # return plot(δs, x -> optmodel([x, critical_size], [Ndata, ydata]), label=L"$n_{crit}= 30$", xlabel=L"$\delta$", ylabel="Optimization Function", legend=:topleft, dpi=600, fmt=:png)
-
-
-
-
-    # plot1 = canvas()
-    # plot!(plot1, x -> n₀*exp((birth_rate-death_rate)*x), 0, simulation_time, label=L"$n_0e^{(r-m)x}$")
-    # plot!(plot1, sample_times, averages, label="Simulation Average")
-
-    # N, distribution = system_size_distribution(simulation_time-1, bin_width, times, populations)
-    # ccdf = 1 .- cumsum(distribution)
-
-    # plot2 = plot(N[ccdf .> 0],
-    #             ccdf[ccdf.> 0],
-    #             #xlim=(0, 500),
-    #             #ylim=(1e-2, 1),
-    #             xlabel="Population Size [Cell number]",
-    #             ylabel="CCDF",
-    #             yscale=:log10,
-    #             st=:steppost,
-    #             label=nothing,
-    #         )
-    # display(plot1)
-    # savefig(plot1, "Comparison.png")
-    # savefig(plot2, "Distribution.png")
-
-    # time_array = LinRange(0, simulation_time, 180)
-    # animate_ccdf(time_array, times, populations)
+    timecode, ccdfdata = read_ccdf_in_data("Data/20220222_idx.xlsm")
+    ccdfdata = ccdfdata[7]
+    firstzero = findfirst(x -> x .≤ 0, ccdfdata)
+    Nmin = 2
+    Nmax = min(200, firstzero-1)
+    logccdfdata = log.(ccdfdata[Nmin:Nmax])
+    Ndata = Nmin:Nmax
+    guess = [0.2, 30]
+    fit = fit_model(Ndata, logccdfdata, guess)
+    p = plot(Ndata, [logccdfdata, logmodel(Ndata, fit.minimizer)], label=["Data" "Fit"], xlabel=L"N", ylabel=L"\log(1-P(N))", title="Fit of the model to data", legend=:topleft)
+    display(p)
+    return fit,p
 
 
 end

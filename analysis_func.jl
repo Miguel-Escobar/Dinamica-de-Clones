@@ -81,7 +81,6 @@ function read_excel_data(datalocation)
     timecodes = convert(Vector{Int64}, data["L"][2:end])
     clusterdata = convert(Vector{Int64},data["N"][2:end])
     clusters_at_different_timecodes = [clusterdata[timecodes .== t] for t in unique(timecodes)]
-    println(clusters_at_different_timecodes[1])
     clusters_at_different_timecodes = [counts(clusters) for clusters in clusters_at_different_timecodes]
     max_size = maximum(maximum.(clusters_at_different_timecodes))
 
