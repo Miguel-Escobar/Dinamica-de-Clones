@@ -75,7 +75,7 @@ function main()
     Nmin = 1
     Nmax = min(600, firstzero-1)
     logccdfdata = log.(ccdfdata[Nmin:Nmax])
-    p = plot(Nmin:Nmax, logccdfdata, xlabel=L"N", ylabel=L"\log(1-P(N))", title="Data")
+    p = plot(Nmin:Nmax, logccdfdata, xlabel=L"N", ylabel=L"\log(1-P(N))", title="Data", seriestype=:steppost)
     
     ccdfdata = ccdfdatas[8]
     firstzero = findfirst(x -> x .≤ 0, ccdfdata)
@@ -86,7 +86,7 @@ function main()
     Nmin = 1
     Nmax = min(500, firstzero-1)
     logccdfdata = log.(ccdfdata[Nmin:Nmax])
-    plot!(p, Nmin:Nmax, logccdfdata)
+    plot!(p, Nmin:Nmax, logccdfdata, seriestype=:steppost)
     display(p)
     # Ndata = Nmin:Nmax
     # guess = [0.2, 30]
