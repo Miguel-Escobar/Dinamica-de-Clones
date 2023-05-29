@@ -79,7 +79,7 @@ end
 function read_excel_data(datalocation)
     data = XLSX.readxlsx(datalocation)["raw"]
     timecodes = convert(Vector{Int64}, data["L"][2:end])
-    clusterdata = convert(Vector{Int64},data["N"][2:end])
+    clusterdata = convert(Vector{Int64},data["N"][2:end]) # Cambiar a N
     clusters_at_different_timecodes = [clusterdata[timecodes .== t] for t in unique(timecodes)]
     clusters_at_different_timecodes = [counts(clusters) for clusters in clusters_at_different_timecodes]
     max_size = maximum(maximum.(clusters_at_different_timecodes))
@@ -88,13 +88,14 @@ function read_excel_data(datalocation)
     distributions = []
     for cluster_sizes in clusters_at_different_timecodes
         temp_distribution = zeros(max_size)
-        for i in 1:length(cluster_sizes)
-            if cluster_sizes[i]>0
-                temp_distribution[cluster_sizes[i]] += 1
+        for clustersize in cluster_sizes
+            if clustersize>0
+                temp_distribution[clustersize] += 1
             end
         end
         push!(distributions, temp_distribution./sum(temp_distribution))
     end
+    # println(length(clusters_at_different_timecodes[8]))
     return timecodes, distributions
 end
 

@@ -26,6 +26,7 @@ function logmodel(Ndata, params; t=13*24)
     else
         return [-Inf for i in indexes]
     end
+    
 end
 
 """
@@ -67,18 +68,32 @@ function main()
 
     # Probamos el fiteo:
 
-    timecode, ccdfdata = read_ccdf_in_data("Data/20220222_idx.xlsm")
-    ccdfdata = ccdfdata[7]
+    timecode, ccdfdatas = read_ccdf_in_data("Data/20220222_idx.xlsm")
+
+    ccdfdata = ccdfdatas[7]
     firstzero = findfirst(x -> x .≤ 0, ccdfdata)
-    Nmin = 2
-    Nmax = min(200, firstzero-1)
+    Nmin = 1
+    Nmax = min(600, firstzero-1)
     logccdfdata = log.(ccdfdata[Nmin:Nmax])
-    Ndata = Nmin:Nmax
-    guess = [0.2, 30]
-    fit = fit_model(Ndata, logccdfdata, guess)
-    p = plot(Ndata, [logccdfdata, logmodel(Ndata, fit.minimizer)], label=["Data" "Fit"], xlabel=L"N", ylabel=L"\log(1-P(N))", title="Fit of the model to data", legend=:topleft)
+    p = plot(Nmin:Nmax, logccdfdata, xlabel=L"N", ylabel=L"\log(1-P(N))", title="Data")
+    
+    ccdfdata = ccdfdatas[8]
+    firstzero = findfirst(x -> x .≤ 0, ccdfdata)
+    if firstzero === nothing
+        firstzero = length(ccdfdata)
+    end
+
+    Nmin = 1
+    Nmax = min(500, firstzero-1)
+    logccdfdata = log.(ccdfdata[Nmin:Nmax])
+    plot!(p, Nmin:Nmax, logccdfdata)
     display(p)
-    return fit,p
+    # Ndata = Nmin:Nmax
+    # guess = [0.2, 30]
+    # fit = fit_model(Ndata, logccdfdata, guess)
+    # p = plot(Ndata, [logccdfdata, logmodel(Ndata, fit.minimizer)], label=["Data" "Fit"], xlabel=L"N", ylabel=L"\log(1-P(N))", title="Fit of the model to data", legend=:topleft)
+    # display(p)
+    # return fit,p
 
 
 end
