@@ -38,7 +38,7 @@ def prob_distribution(t, params, i0=1, imax=1000, method='expm'):
                        b_rate=custom_birth_rate,
                        d_rate=custom_death_rate,
                        method=method)
-    return p
+    return p.T
 
 
 def ccdf(p):
@@ -70,6 +70,7 @@ def plot_ccdf(t, params, i0=1, imax=1000, method='expm'):
 
 
 if __name__ == '__main__':
+
     # import cProfile, pstats, io
     # profiler = cProfile.Profile()
     # profiler.enable()
@@ -78,7 +79,7 @@ if __name__ == '__main__':
 
     params = [1/82, 1/(4*82), 2., 30.]
 
-    plot_ccdf(13*24, params, i0=1, imax=400, method='')
+    plot_ccdf(13*24, params, method='expm')
 
     # End code here
 
