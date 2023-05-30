@@ -28,7 +28,7 @@ def P(i, j, t, params, method='ilt'):
     return p_ij
 
 
-def prob_distribution(t, params, i0=1, imax=1000, method='expm'):
+def prob_distribution(t, params, i0=1, imax=1000, method='expm', **kwargs):
     """
     Probability distribution at time t.
     """
@@ -37,24 +37,29 @@ def prob_distribution(t, params, i0=1, imax=1000, method='expm'):
                        model='custom',
                        b_rate=custom_birth_rate,
                        d_rate=custom_death_rate,
-                       method=method)
+                       method=method,
+                       **kwargs)
     return p.T
 
 
-def ccdf(p):
+def ccdfunc(n, params, t, i0=1, method='expm'):
     """
     Complementary cumulative distribution function.
     """
-    return 1 - np.cumsum(p)
+
+    p = prob_distribution(t, params, i0=i0, imax=n, method=method, z_trunc=[i0, n + 100])
+    compdist = 1 - np.cumsum(p)
+
+    return compdist[-1]
 
 
-def plot_ccdf(t, params, i0=1, imax=1000, method='expm'):
+def plot_ccdf(t, params, i0=1, imax=500, method='expm'):
     """
     Plot complimentary cumulative probability distribution at time t.
     """
     n = np.arange(i0, imax+1)
     p = prob_distribution(t, params, i0=i0, imax=imax, method=method)
-    p = ccdf(p)
+    p = 1 - np.cumsum(p)
 
     fig = plt.figure(figsize=(8, 6))
     ax = fig.add_subplot(111)
