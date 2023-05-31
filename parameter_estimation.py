@@ -13,12 +13,15 @@ def estimate_parameters(t, ndata, ccdfdata, initial_guess, bounds):
                             bounds=bounds,
                             max_nfev=100,
                             xtol=1e-8,
-                            verbose=2)
+                            method='dogbox',
+                            verbose=2) # Lmao doesnt change parameters
 
     return params, cov
 
 
 if __name__ == '__main__':
+
+    # Profiling boilerplate:
 
     import cProfile, pstats, io
     profiler = cProfile.Profile()
@@ -27,14 +30,15 @@ if __name__ == '__main__':
     # Start code here
 
     datalocation = 'Data/20220222_idx.xlsm'
-    tcode = 8
+    tcode = 7
+    initial_guess = [1/100., 1/1000., 9., 100.]
+
     
     t = [24, 24, 3*24, 3*24, 6*24, 6*24, 13*24, 13*24][tcode-1]
 
     data = an.read_excel_data(datalocation)
     ndata, ccdfdata = an.ccdf_at_tcode(tcode, data)
-    initial_guess = [1/100., 0., 9., 10.]
-    bounds = ([0, 0, 0, 0], [10, 10, 10, 100])  # Tuneable.
+    bounds = ([0, 0, 0, 0], [10, 10, 10, 1000])  # Tuneable.
 
     params, cov = estimate_parameters(t, ndata, ccdfdata, initial_guess, bounds)
 
@@ -49,6 +53,8 @@ if __name__ == '__main__':
     fig.show()
 
     # End code here
+
+    # Profiling boilerplate:
 
     profiler.disable()
     s = io.StringIO()
