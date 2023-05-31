@@ -77,9 +77,9 @@ def ccdf_at_tcode(tcode, df):
 
     measured_sizes = clone_sizes(tcode, df)
     sizes, dist = clone_size_distribution(measured_sizes)
-    ccdf = 1 - np.cumsum(dist)
+    ccdf = 1 - np.cumsum(dist[1:])
 
-    return sizes, ccdf
+    return sizes[1:], ccdf
 
 if __name__ == "__main__":
 

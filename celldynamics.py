@@ -47,10 +47,10 @@ def ccdfunc(n, params, t, i0=1, method='expm'):
     Complementary cumulative distribution function.
     """
 
-    p = prob_distribution(t, params, i0=i0, imax=n, method=method, z_trunc=[i0, n + 100])
+    p = prob_distribution(t, params, i0=i0, imax=np.max(n), method=method, z_trunc=[i0, np.max(n) + 100])
     compdist = 1 - np.cumsum(p)
-
-    return compdist[-1]
+    
+    return compdist[(n-1).astype(int)]
 
 
 def plot_ccdf(t, params, i0=1, imax=500, method='expm'):
