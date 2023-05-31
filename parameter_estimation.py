@@ -12,7 +12,7 @@ def estimate_parameters(t, ndata, ccdfdata, initial_guess, bounds):
                             p0=initial_guess,
                             bounds=bounds,
                             max_nfev=100,
-                            xtol=1e-7,
+                            xtol=1e-8,
                             verbose=2)
 
     return params, cov
@@ -33,7 +33,7 @@ if __name__ == '__main__':
 
     data = an.read_excel_data(datalocation)
     ndata, ccdfdata = an.ccdf_at_tcode(tcode, data)
-    initial_guess = [1/100., 0., 1., 10.]
+    initial_guess = [1/100., 0., 9., 10.]
     bounds = ([0, 0, 0, 0], [10, 10, 10, 100])  # Tuneable.
 
     params, cov = estimate_parameters(t, ndata, ccdfdata, initial_guess, bounds)
