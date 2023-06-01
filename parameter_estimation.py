@@ -32,7 +32,9 @@ if __name__ == '__main__':
     # Start code here
 
     datalocation = 'Data/20220222_idx.xlsm'
-    # initial_guess = [1/100., 1/1000., 9., 1.]
+
+
+    # Initial guesses for parameters. These are tuned by hand. Trampa trampita jeje.
     guesses = [[1/100., 1/1000., 9., 10.],
                [1/100., 1/1000., 9., 10.],
                [1/100., 1/1000., 9., 5.],
