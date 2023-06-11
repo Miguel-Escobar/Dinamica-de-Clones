@@ -9,11 +9,11 @@ def heaviside(x): return .5*(np.sign(x) + 1)
 
 
 @njit
-def custom_birth_rate(z, p): return p[0]*(1 + p[2]*heaviside(z - p[3]))*z
+def custom_birth_rate(z, p): return p[0]*(1 + p[1]*heaviside(z - p[2]))*z
 
 
 @njit
-def custom_death_rate(z, p): return p[1]*z
+def custom_death_rate(z, p): return 0
 
 
 def P(i, j, t, params, method='ilt'):
@@ -82,8 +82,7 @@ if __name__ == '__main__':
 
     # Start code here
 
-    params = [1/82, 1/(4*82), 2., 30.]
-
+    params = [3/(4*82), 2., 30.]
     plot_ccdf(13*24, params, method='expm')
 
     # End code here

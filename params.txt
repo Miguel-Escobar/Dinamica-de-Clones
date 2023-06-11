@@ -1,8 +1,2 @@
-tcode: 1, params: [  0.53486203   0.37831506 100.          10.00000075] (birth_rate, death_rate, delta, n_crit)
-tcode: 2, params: [ 1.13667817  0.98948235  0.         80.09254649] (birth_rate, death_rate, delta, n_crit)
-tcode: 3, params: [0.04425141 0.         1.41760138 4.99999973] (birth_rate, death_rate, delta, n_crit)
-tcode: 4, params: [0.03470812 0.         2.42889973 3.99999986] (birth_rate, death_rate, delta, n_crit)
-tcode: 5, params: [4.14214206e-02 9.00678494e-03 4.50351184e+00 2.99999993e+01] (birth_rate, death_rate, delta, n_crit)
-tcode: 6, params: [ 0.05135883  0.02335905  2.61954144 17.00000001] (birth_rate, death_rate, delta, n_crit)
-tcode: 7, params: [2.30393119e-01 2.13501714e-01 1.94461979e-02 1.99907948e+01] (birth_rate, death_rate, delta, n_crit)
-tcode: 8, params: [1.92664098e-02 3.74163478e-03 1.67117585e+00 5.00000008e+01] (birth_rate, death_rate, delta, n_crit)
+tcode, birth_rate, delta, n_crit
+8, 0.01575498570629036, 2.860269581583641, 59.99999785483495
