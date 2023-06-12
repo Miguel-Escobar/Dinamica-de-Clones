@@ -29,13 +29,13 @@ def func_to_optimize(birth_rate, delta, n_crit, t, ndata, ccdfdata):
 
 if __name__ == '__main__':
 
-    # Profiling boilerplate:
+    # # Profiling boilerplate:
 
-    import cProfile
-    import pstats
-    import io
-    profiler = cProfile.Profile()
-    profiler.enable()
+    # import cProfile
+    # import pstats
+    # import io
+    # profiler = cProfile.Profile()
+    # profiler.enable()
 
     # Start code here
 
@@ -51,9 +51,9 @@ if __name__ == '__main__':
                [3/400., 9., 9.],
                [3/400., 9., 54.]]
 
-    tcodes = [8]#[1, 2, 3, 4, 5, 6, 7, 8]
+    tcodes = [1, 2, 3, 4, 5, 6, 7, 8]
 
-    with open('params.txt', 'w') as file:
+    with open('critsize_params.txt', 'w') as file:
 
         file.write(f"tcode, birth_rate, delta, n_crit\n")
 
@@ -74,7 +74,7 @@ if __name__ == '__main__':
 
             # TESTING
 
-            n_crit_sweep = np.arange(1, 101).astype(float)
+            n_crit_sweep = np.linspace(3, 70, 135)
 
             curve = [func_to_optimize(params[0], params[1], n_crit, t, ndata, ccdfdata) for n_crit in n_crit_sweep]
 
@@ -109,11 +109,11 @@ if __name__ == '__main__':
 
     # End code here
 
-    # Profiling boilerplate:
+    # # Profiling boilerplate:
 
-    profiler.disable()
-    s = io.StringIO()
-    stats = pstats.Stats(profiler, stream=s).sort_stats('tottime')
-    stats.print_stats()
-    with open('test.txt', 'w+') as f:
-        f.write(s.getvalue())
+    # profiler.disable()
+    # s = io.StringIO()
+    # stats = pstats.Stats(profiler, stream=s).sort_stats('tottime')
+    # stats.print_stats()
+    # with open('test.txt', 'w+') as f:
+    #     f.write(s.getvalue())
