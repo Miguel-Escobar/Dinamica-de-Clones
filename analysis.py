@@ -81,6 +81,29 @@ def ccdf_at_tcode(tcode, df):
 
     return sizes[1:], ccdf
 
+def r_score(model, fit_params, ndata, ccdfdata):
+    """
+    Computes the R^2 score for a given model and its parameters, given the
+    data to fit to.
+
+    Parameters:
+    model (function): The model function to fit to the data.
+    fit_params (list): The parameters to fit to the data.
+    ndata (numpy.ndarray): The x-values of the data to fit to.
+    ccdfdata (numpy.ndarray): The y-values of the data to fit to.
+
+    Returns:
+    float: The R^2 score for the given model and parameters.
+    """
+
+    ccdfmodel = model(ndata, *fit_params)
+    ss_res = np.sum((ccdfdata - ccdfmodel)**2)
+    ss_tot = np.sum((ccdfdata - np.mean(ccdfdata))**2)
+    r2 = 1 - ss_res/ss_tot
+
+    return r2
+
+
 if __name__ == "__main__":
 
     datalocation = 'Data/20220222_idx.xlsm'

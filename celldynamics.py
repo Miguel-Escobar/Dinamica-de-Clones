@@ -9,7 +9,7 @@ def heaviside(x): return .5*(np.sign(x) + 1)
 
 
 @njit
-def custom_birth_rate(z, p): return p[0]*(1 + p[1]*heaviside(z - p[2]))*z
+def custom_birth_rate(z, p): return p[0]*(1 + p[1]*heaviside(z - round(p[2])))*z
 
 
 @njit

@@ -53,59 +53,64 @@ if __name__ == '__main__':
 
     tcodes = [1, 2, 3, 4, 5, 6, 7, 8]
 
-    with open('critsize_params.txt', 'w') as file:
+    with open('critsize_params.csv', 'w') as file:
 
-        file.write(f"tcode, birth_rate, delta, n_crit\n")
+        file.write(f"tcode, birth_rate, delta, n_crit, r_score\n")
 
         for tcode in tcodes:
 
             t = [24, 24, 3*24, 3*24, 6*24, 6*24, 13*24, 13*24][tcode-1]
             initial_guess = guesses[tcode-1]
-
+            init_n0 = guesses[tcode-1][2]
             data = an.read_excel_data(datalocation)
             ndata, ccdfdata = an.ccdf_at_tcode(tcode, data)
             bounds = ([0, 0, 0], [10, 100, 300])  # Tuneable.
 
-            print(f"\n Processing tcode {tcode}, with initial params {initial_guess}\n")
+            for n_sweep in np.arange(0, init_n0):
+                initial_guess[2] = init_n0*.5 + n_sweep
 
-            params, cov = estimate_parameters(t, ndata, ccdfdata, initial_guess, bounds)
 
-            print(f"\n Params at tcode {tcode}: {params}\n")
+                print(f"\n Processing tcode {tcode}, with initial params {initial_guess}\n")
 
-            # TESTING
+                params, cov = estimate_parameters(t, ndata, ccdfdata, initial_guess, bounds)
+                r2 = an.r_score(lambda n, birth_rate, delta, n_crit: np.log(cdn.ccdfunc(n, [birth_rate, delta, n_crit], t)), params, ndata, np.log(ccdfdata))
 
-            n_crit_sweep = np.linspace(3, 70, 135)
+                print(f"\n Params at tcode {tcode}: {params}, with score {r2}\n")
 
-            curve = [func_to_optimize(params[0], params[1], n_crit, t, ndata, ccdfdata) for n_crit in n_crit_sweep]
+                # TESTING
 
-            argcurvemin = n_crit_sweep[np.argmin(curve)]
+                # n_crit_sweep = np.linspace(3, 70, 135)
 
-            test_fig = plt.figure(figsize=(8, 6))
-            test_fig.clf()
-            test_ax = test_fig.add_subplot(111)
-            test_ax.plot(n_crit_sweep, curve)
-            test_ax.plot(argcurvemin, np.min(curve), 'o', label=f'Minimum at n = {argcurvemin}')
-            test_ax.set_title(f"t: {t} [Hrs], EGF = {-1 + 2*(tcode % 2)}")
-            test_ax.set_xlabel(r'$n_{crit}$')
-            test_ax.set_ylabel('Sum of squared residuals')
-            test_ax.legend()
-            test_fig.savefig(f"images/critsize model/tcode_{tcode}_nsweep.png", dpi=600)
+                # curve = [func_to_optimize(params[0], params[1], n_crit, t, ndata, ccdfdata) for n_crit in n_crit_sweep]
 
-            # END TESTING
+                # argcurvemin = n_crit_sweep[np.argmin(curve)]
 
-            file.write(f"{tcode}, {params[0]}, {params[1]}, {params[2]}\n")
+                # test_fig = plt.figure(figsize=(8, 6))
+                # test_fig.clf()
+                # test_ax = test_fig.add_subplot(111)
+                # test_ax.plot(n_crit_sweep, curve)
+                # test_ax.plot(argcurvemin, np.min(curve), 'o', label=f'Minimum at n = {argcurvemin}')
+                # test_ax.set_title(f"t: {t} [Hrs], EGF = {-1 + 2*(tcode % 2)}")
+                # test_ax.set_xlabel(r'$n_{crit}$')
+                # test_ax.set_ylabel('Sum of squared residuals')
+                # test_ax.legend()
+                # test_fig.savefig(f"images/critsize model/tcode_{tcode}_nsweep.png", dpi=600)
 
-            fig = plt.figure(figsize=(8, 6))
-            fig.clf()
-            ax = fig.add_subplot(111)
-            ax.plot(ndata, ccdfdata, 'o', label='Data')
-            ax.plot(ndata, cdn.ccdfunc(ndata, params, t), label='Fit')
-            ax.set_title(f"t: {t} [Hrs], EGF = {-1 + 2*(tcode % 2)}")
-            ax.set_yscale('log')
-            ax.set_xlabel('Clone size')
-            ax.set_ylabel('CCDF')
-            ax.legend()
-            fig.savefig(f"images/critsize model/tcodefit_{tcode}.png", dpi=600)
+                # END TESTING
+
+                file.write(f"{tcode}, {params[0]}, {params[1]}, {params[2]}, {r2}\n")
+
+                # fig = plt.figure(figsize=(8, 6))
+                # fig.clf()
+                # ax = fig.add_subplot(111)
+                # ax.plot(ndata, ccdfdata, 'o', label='Data')
+                # ax.plot(ndata, cdn.ccdfunc(ndata, params, t), label='Fit')
+                # ax.set_title(f"t: {t} [Hrs], EGF = {-1 + 2*(tcode % 2)}")
+                # ax.set_yscale('log')
+                # ax.set_xlabel('Clone size')
+                # ax.set_ylabel('CCDF')
+                # ax.legend()
+                # fig.savefig(f"images/critsize model/tcodefit_{tcode}.png", dpi=600)
 
     # End code here
 
