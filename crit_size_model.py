@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
 
-def estimate_parameters(t, ndata, ccdfdata, initial_guess, bounds):
+def estimate_parameters(t, ndata, ccdfdata, n_crit, initial_guess, bounds):
 
-    params, cov = curve_fit(lambda n, birth_rate, delta, n_crit: np.log(cdn.ccdfunc(n, [birth_rate, delta, n_crit], t)), ndata, np.log(ccdfdata),
+    params, cov = curve_fit(lambda n, birth_rate, delta: np.log(cdn.ccdfunc(n, [birth_rate, delta, n_crit], t)), ndata, np.log(ccdfdata),
                             p0=initial_guess,
                             bounds=bounds,
                             max_nfev=10_000,
@@ -16,7 +16,7 @@ def estimate_parameters(t, ndata, ccdfdata, initial_guess, bounds):
                             gtol=1e-6,
                             method='dogbox',
                             verbose=2,
-                            x_scale=[1, 1, 1e6])  # Not sure if this does anything.
+                            x_scale=[1, 1])  # Not sure if this does anything.
 
     return params, cov
 
@@ -42,14 +42,7 @@ if __name__ == '__main__':
     datalocation = 'Data/20220222_idx.xlsm'
 
     # Initial guesses for parameters. These are tuned by hand. Trampa trampita jeje.
-    guesses = [[3/400., 9., 8.],
-               [3/400., 9., 5.],
-               [3/400., 9., 6.],
-               [3/400., 9., 5.],
-               [3/400., 9., 30.],
-               [3/400., 9., 17.],
-               [3/400., 9., 9.],
-               [3/400., 9., 54.]]
+    initial_guess = [3/400., 9.]
 
     tcodes = [1, 2, 3, 4, 5, 6, 7, 8]
 
@@ -60,22 +53,23 @@ if __name__ == '__main__':
         for tcode in tcodes:
 
             t = [24, 24, 3*24, 3*24, 6*24, 6*24, 13*24, 13*24][tcode-1]
-            initial_guess = guesses[tcode-1]
-            init_n0 = guesses[tcode-1][2]
+            # initial_guess = guesses[tcode-1]
+            # init_n0 = guesses[tcode-1][2]
             data = an.read_excel_data(datalocation)
             ndata, ccdfdata = an.ccdf_at_tcode(tcode, data)
-            bounds = ([0, 0, 0], [10, 100, 300])  # Tuneable.
+            bounds = ([0, 0], [10, 100])  # Tuneable.
 
-            for n_sweep in np.arange(0, init_n0):
-                initial_guess[2] = init_n0*.5 + n_sweep
+            for n_crit in ndata:
 
+                print(f"\n Processing tcode {tcode}, with initial params {initial_guess}, {n_crit}\n")
 
-                print(f"\n Processing tcode {tcode}, with initial params {initial_guess}\n")
+                n_crit = float(n_crit)
+                params, cov = estimate_parameters(t, ndata, ccdfdata, n_crit, initial_guess, bounds)
+                r2 = an.r_score(lambda n, birth_rate, delta: np.log(cdn.ccdfunc(n, [birth_rate, delta, n_crit], t)), params, ndata, np.log(ccdfdata))
 
-                params, cov = estimate_parameters(t, ndata, ccdfdata, initial_guess, bounds)
-                r2 = an.r_score(lambda n, birth_rate, delta, n_crit: np.log(cdn.ccdfunc(n, [birth_rate, delta, n_crit], t)), params, ndata, np.log(ccdfdata))
+                print(f"\n Params at tcode {tcode} and n crit {n_crit}: {params}, with score {r2}\n")
+                file.write(f"{tcode}, {params[0]}, {params[1]}, {n_crit}, {r2}\n")
 
-                print(f"\n Params at tcode {tcode}: {params}, with score {r2}\n")
 
                 # TESTING
 
@@ -97,8 +91,6 @@ if __name__ == '__main__':
                 # test_fig.savefig(f"images/critsize model/tcode_{tcode}_nsweep.png", dpi=600)
 
                 # END TESTING
-
-                file.write(f"{tcode}, {params[0]}, {params[1]}, {params[2]}, {r2}\n")
 
                 # fig = plt.figure(figsize=(8, 6))
                 # fig.clf()
