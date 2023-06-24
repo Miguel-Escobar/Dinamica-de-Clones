@@ -4,6 +4,13 @@ import matplotlib.pyplot as plt
 from collections import Counter
 from scipy.optimize import curve_fit
 
+def read_crit_size_params(file_name):
+
+    df = pd.read_csv(file_name)
+    params = df.values[:, 1:4]
+    return params
+
+
 
 def read_excel_data(file_name):
     """
@@ -105,19 +112,29 @@ def r_score(model, fit_params, ndata, ccdfdata):
 
 
 if __name__ == "__main__":
+    t = [24, 3*24, 6*24, 13*24]
+    params = read_crit_size_params("critsize_params.csv")
+    egfnegative = params[np.arange(0, 4)*2 + 1]
+    egfpositive = params[np.arange(0, 4)*2]
 
-    datalocation = 'Data/20220222_idx.xlsm'
-    tcode = 7
+    fig = plt.figure("critsize params vs t")
+    ax1 = fig.add_subplot(121)
+    ax2 = fig.add_subplot(122)
+    ax1.plot(t, egfnegative[:, 0], label="Birth rate")
+    ax1.plot(t, egfnegative[:, 1]*egfnegative[:, 0], label=r"$\delta*$ Birth rate")
+    # ax1.plot(t, egfnegative[:, 2], label=r"$n_{crit}$")
 
-    df = read_excel_data(datalocation)
-    n, ccdf = ccdf_at_tcode(tcode, df)
+    ax2.plot(t, egfpositive[:, 0], label="Birth rate")
+    ax2.plot(t, egfpositive[:, 1]*egfpositive[:, 0], label=r"$\delta*$ Birth rate")
+    # ax2.plot(t, egfpositive[:, 2], label=r"$n_{crit}$")
 
-    fig = plt.figure(figsize=(8, 6))
-    fig.clf()
-    ax = fig.add_subplot(111)
-    ax.set_yscale('log')
-    ax.plot(n[:-1], ccdf[:-1], 'o', label='Tcode {}'.format(tcode))
-    ax.set_xlabel('Clone size')
-    ax.set_ylabel('CCDF')
-    ax.legend()
-    fig.show()
+    ax1.legend()
+    ax2.legend()
+
+    ax1.set_xlabel("Time (hours)")
+    ax2.set_xlabel("Time (hours)")
+    ax1.set_ylabel("Parameter value")
+    # ax2.set_ylabel("Parameter value")
+
+    ax1.set_title("EGF negative")
+    ax2.set_title("EGF positive")

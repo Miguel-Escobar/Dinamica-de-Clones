@@ -41,8 +41,10 @@ if __name__ == '__main__':
 
     datalocation = 'Data/20220222_idx.xlsm'
 
-    # Initial guesses for parameters. These are tuned by hand. Trampa trampita jeje.
+    # Initial guesses for parameters. The critical sizes were obtained via a sweep of ndata:
+
     initial_guess = [3/400., 9.]
+    n_critical_values = [5., 2., 5., 5., 28., 15., 2., 54.]
 
     tcodes = [1, 2, 3, 4, 5, 6, 7, 8]
 
@@ -53,56 +55,31 @@ if __name__ == '__main__':
         for tcode in tcodes:
 
             t = [24, 24, 3*24, 3*24, 6*24, 6*24, 13*24, 13*24][tcode-1]
-            # initial_guess = guesses[tcode-1]
-            # init_n0 = guesses[tcode-1][2]
             data = an.read_excel_data(datalocation)
             ndata, ccdfdata = an.ccdf_at_tcode(tcode, data)
             bounds = ([0, 0], [10, 100])  # Tuneable.
 
-            for n_crit in ndata:
+            n_crit = n_critical_values[tcode-1]
 
-                print(f"\n Processing tcode {tcode}, with initial params {initial_guess}, {n_crit}\n")
+            print(f"\n Processing tcode {tcode}, with initial params {initial_guess[0]}, {initial_guess[1]}, {n_crit}\n")
 
-                n_crit = float(n_crit)
-                params, cov = estimate_parameters(t, ndata, ccdfdata, n_crit, initial_guess, bounds)
-                r2 = an.r_score(lambda n, birth_rate, delta: np.log(cdn.ccdfunc(n, [birth_rate, delta, n_crit], t)), params, ndata, np.log(ccdfdata))
+            params, cov = estimate_parameters(t, ndata, ccdfdata, n_crit, initial_guess, bounds)
+            r2 = an.r_score(lambda n, birth_rate, delta: np.log(cdn.ccdfunc(n, [birth_rate, delta, n_crit], t)), params, ndata, np.log(ccdfdata))
 
-                print(f"\n Params at tcode {tcode} and n crit {n_crit}: {params}, with score {r2}\n")
-                file.write(f"{tcode}, {params[0]}, {params[1]}, {n_crit}, {r2}\n")
+            print(f"\n Params at tcode {tcode} and n crit {n_crit}: {params}, with score {r2}\n")
+            file.write(f"{tcode}, {params[0]}, {params[1]}, {n_crit}, {r2}\n")
 
-
-                # TESTING
-
-                # n_crit_sweep = np.linspace(3, 70, 135)
-
-                # curve = [func_to_optimize(params[0], params[1], n_crit, t, ndata, ccdfdata) for n_crit in n_crit_sweep]
-
-                # argcurvemin = n_crit_sweep[np.argmin(curve)]
-
-                # test_fig = plt.figure(figsize=(8, 6))
-                # test_fig.clf()
-                # test_ax = test_fig.add_subplot(111)
-                # test_ax.plot(n_crit_sweep, curve)
-                # test_ax.plot(argcurvemin, np.min(curve), 'o', label=f'Minimum at n = {argcurvemin}')
-                # test_ax.set_title(f"t: {t} [Hrs], EGF = {-1 + 2*(tcode % 2)}")
-                # test_ax.set_xlabel(r'$n_{crit}$')
-                # test_ax.set_ylabel('Sum of squared residuals')
-                # test_ax.legend()
-                # test_fig.savefig(f"images/critsize model/tcode_{tcode}_nsweep.png", dpi=600)
-
-                # END TESTING
-
-                # fig = plt.figure(figsize=(8, 6))
-                # fig.clf()
-                # ax = fig.add_subplot(111)
-                # ax.plot(ndata, ccdfdata, 'o', label='Data')
-                # ax.plot(ndata, cdn.ccdfunc(ndata, params, t), label='Fit')
-                # ax.set_title(f"t: {t} [Hrs], EGF = {-1 + 2*(tcode % 2)}")
-                # ax.set_yscale('log')
-                # ax.set_xlabel('Clone size')
-                # ax.set_ylabel('CCDF')
-                # ax.legend()
-                # fig.savefig(f"images/critsize model/tcodefit_{tcode}.png", dpi=600)
+            fig = plt.figure(figsize=(8, 6))
+            fig.clf()
+            ax = fig.add_subplot(111)
+            ax.plot(ndata, ccdfdata, 'o', label='Data')
+            ax.plot(ndata, cdn.ccdfunc(ndata, [params[0], params[1], n_crit], t), label='Fit')
+            ax.set_title(f"t: {t} [Hrs], EGF = {-1 + 2*(tcode % 2)}")
+            ax.set_yscale('log')
+            ax.set_xlabel('Clone size')
+            ax.set_ylabel('CCDF')
+            ax.legend()
+            fig.savefig(f"images/critsize model/tcodefit_{tcode}.png", dpi=600)
 
     # End code here
 
