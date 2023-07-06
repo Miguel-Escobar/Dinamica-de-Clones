@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+plt.rcParams['font.size'] = 16  # Set the font size to 16
 from collections import Counter
 from scipy.optimize import curve_fit
 
@@ -117,24 +118,32 @@ if __name__ == "__main__":
     egfnegative = params[np.arange(0, 4)*2 + 1]
     egfpositive = params[np.arange(0, 4)*2]
 
-    fig = plt.figure("critsize params vs t")
-    ax1 = fig.add_subplot(121)
-    ax2 = fig.add_subplot(122)
-    ax1.plot(t, egfnegative[:, 0], label="Birth rate")
-    ax1.plot(t, egfnegative[:, 1]*egfnegative[:, 0], label=r"$\delta*$ Birth rate")
-    # ax1.plot(t, egfnegative[:, 2], label=r"$n_{crit}$")
+    fig = plt.figure("critsize params vs t", figsize=(15, 6))
+    ax1 = fig.add_subplot(131)
+    ax2 = fig.add_subplot(132)
+    ax3 = fig.add_subplot(133)
 
-    ax2.plot(t, egfpositive[:, 0], label="Birth rate")
-    ax2.plot(t, egfpositive[:, 1]*egfpositive[:, 0], label=r"$\delta*$ Birth rate")
-    # ax2.plot(t, egfpositive[:, 2], label=r"$n_{crit}$")
+    ax1.plot(t, egfnegative[:, 0], 'o-', label="EGF negative")
+    ax2.plot(t, egfnegative[:, 1]*egfnegative[:, 0], 'o-', label=r"EGF negative")
+    ax3.plot(t, egfnegative[:, 2], 'o-', label=r"EGF negative")
+
+    ax1.plot(t, egfpositive[:, 0], 'o-', label="EGF positive")
+    ax2.plot(t, egfpositive[:, 1]*egfpositive[:, 0], 'o-', label=r"EGF positive")
+    ax3.plot(t, egfpositive[:, 2], 'o-', label=r"EGF positive")
 
     ax1.legend()
     ax2.legend()
+    ax3.legend()
 
-    ax1.set_xlabel("Time (hours)")
-    ax2.set_xlabel("Time (hours)")
-    ax1.set_ylabel("Parameter value")
-    # ax2.set_ylabel("Parameter value")
+    ax1.set_xlabel("Time [Hrs]")
+    ax2.set_xlabel("Time [Hrs]")
+    ax3.set_xlabel("Time [Hrs]")
 
-    ax1.set_title("EGF negative")
-    ax2.set_title("EGF positive")
+    ax1.set_ylabel("Birth rate [1/Hrs]")
+    ax2.set_ylabel(r"$\delta * $ Birth rate [1/Hrs]")
+    ax3.set_ylabel("Critical size")
+    fig.tight_layout()
+    fig.show()
+
+    if input("Guardar el gráfico? [y/n]: ") == "y":
+        fig.savefig("critsize_params_vs_t.png", dpi=600)
