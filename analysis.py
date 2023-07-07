@@ -6,7 +6,15 @@ from collections import Counter
 from scipy.optimize import curve_fit
 
 def read_crit_size_params(file_name):
+    """
+    Reads critical size parameters from a CSV file with the given name.
 
+    Parameters:
+    file_name (str): The name of the CSV file to read.
+
+    Returns:
+    numpy.ndarray: A 2D array containing the critical size parameters.
+    """
     df = pd.read_csv(file_name)
     params = df.values[:, 1:4]
     return params
@@ -111,14 +119,28 @@ def r_score(model, fit_params, ndata, ccdfdata):
 
     return r2
 
+def plot_critsize_params():
+    """
+    Plots the critical size parameters against time for EGF positive and negative
+    conditions.
 
-if __name__ == "__main__":
+    Reads the critical size parameters from the "critsize_params.csv" file and
+    plots the birth rate, delta * birth rate, and critical size against time
+    for both EGF positive and negative conditions.
+
+    Saves the resulting plot as "critsize_params_vs_t.png" if the user chooses
+    to do so.
+
+    Returns:
+    None
+    """
     t = [24, 3*24, 6*24, 13*24]
     params = read_crit_size_params("critsize_params.csv")
     egfnegative = params[np.arange(0, 4)*2 + 1]
     egfpositive = params[np.arange(0, 4)*2]
 
     fig = plt.figure("critsize params vs t", figsize=(15, 6))
+    fig.clf()
     ax1 = fig.add_subplot(131)
     ax2 = fig.add_subplot(132)
     ax3 = fig.add_subplot(133)
@@ -147,3 +169,51 @@ if __name__ == "__main__":
 
     if input("Guardar el gráfico? [y/n]: ") == "y":
         fig.savefig("critsize_params_vs_t.png", dpi=600)
+    plt.close()
+    return
+
+def plot_biexp_params():
+    t = [24, 3*24, 6*24, 13*24][1:]
+    params = read_crit_size_params("expsum_params.csv")
+    egfnegative = params[np.arange(0, 4)*2 + 1][1:]
+    egfpositive = params[np.arange(0, 4)*2][1:]
+
+    fig = plt.figure("expsum params vs t", figsize=(15, 6))
+    fig.clf()
+    ax1 = fig.add_subplot(131)
+    ax2 = fig.add_subplot(132)
+    ax3 = fig.add_subplot(133)
+
+    ax1.plot(t, egfnegative[:, 0], 'o-', label="EGF negative")
+    ax2.plot(t, egfnegative[:, 1], 'o-', label=r"EGF negative")
+    ax3.plot(t, egfnegative[:, 2], 'o-', label=r"EGF negative")
+
+    ax1.plot(t, egfpositive[:, 0], 'o-', label="EGF positive")
+    ax2.plot(t, egfpositive[:, 1], 'o-', label=r"EGF positive")
+    ax3.plot(t, egfpositive[:, 2], 'o-', label=r"EGF positive")
+
+    ax1.legend()
+    ax2.legend()
+    ax3.legend()
+
+    ax1.set_xlabel("Time [Hrs]")
+    ax2.set_xlabel("Time [Hrs]")
+    ax3.set_xlabel("Time [Hrs]")
+
+    ax1.set_ylabel("Population 1 exponential parameter")
+    ax2.set_ylabel("Population 2 exponential parameter")
+    ax3.set_ylabel("Initial population 1 ratio")
+    fig.tight_layout()
+    fig.show()
+
+    if input("Guardar el gráfico? [y/n]: ") == "y":
+        fig.savefig("expsum_params_vs_t.png", dpi=600)
+    plt.close()
+    return
+
+
+
+    
+if __name__ == "__main__":
+    plot_biexp_params()
+    plt.close()
