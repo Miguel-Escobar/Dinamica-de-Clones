@@ -72,13 +72,14 @@ if __name__ == '__main__':
             fig = plt.figure(figsize=(8, 6))
             fig.clf()
             ax = fig.add_subplot(111)
-            ax.plot(ndata, ccdfdata, 'o', label='Data')
-            ax.plot(ndata, cdn.ccdfunc(ndata, [params[0], params[1], n_crit], t), label='Fit')
+            ax.plot(ndata, ccdfdata, 'o', label='CCDF observada')
+            ax.plot(ndata, cdn.ccdfunc(ndata, [params[0], params[1], n_crit], t), label='Ajuste modelo')
             ax.set_title(f"t: {t} [Hrs], EGF = {-1 + 2*(tcode % 2)}")
             ax.set_yscale('log')
-            ax.set_xlabel('Clone size')
+            ax.set_xlabel('Tamaño')
             ax.set_ylabel('CCDF')
             ax.legend()
+            fig.tight_layout()
             fig.savefig(f"images/critsize model/tcodefit_{tcode}.png", dpi=600)
 
     # End code here
