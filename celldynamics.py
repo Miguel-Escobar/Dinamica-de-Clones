@@ -73,6 +73,15 @@ def plot_ccdf(t, params, i0=1, imax=500, method='expm'):
 
     return
 
+def simulate_critsize_model(n_realizations, measure_times, birth_rate, delta, crit_size, init_size):
+    data = bd.simulate.discrete([birth_rate, delta, crit_size], 'custom', init_size,
+                         b_rate = custom_birth_rate,
+                         d_rate = custom_death_rate,
+                         times=measure_times,
+                         k=n_realizations,
+                         display=True
+                         )
+    return data
 
 if __name__ == '__main__':
 
@@ -82,8 +91,11 @@ if __name__ == '__main__':
 
     # Start code here
 
-    params = [3/(4*82), 2., 30.]
-    plot_ccdf(13*24, params, method='expm')
+    # params = [3/(4*82), 2., 30.]
+    # plot_ccdf(13*24, params, method='expm')
+    times = [1*24,3*24,6*24,13*24]
+    data = simulate_critsize_model(100000, times, 3/(4*82), 2., 30., 1)
+    print(data)
 
     # End code here
 
