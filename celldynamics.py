@@ -78,8 +78,8 @@ def simulate_critsize_model(n_realizations, measure_times, birth_rate, delta, cr
                          b_rate = custom_birth_rate,
                          d_rate = custom_death_rate,
                          times=measure_times,
-                         k=n_realizations,
-                         display=True
+                         k=n_realizations
+                        #  display=True
                          )
     return data
 
