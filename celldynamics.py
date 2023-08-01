@@ -91,11 +91,9 @@ if __name__ == '__main__':
 
     # Start code here
 
-    # params = [3/(4*82), 2., 30.]
-    # plot_ccdf(13*24, params, method='expm')
     times = [1*24,3*24,6*24,13*24]
     data = simulate_critsize_model(100000, times, 3/(4*82), 2., 30., 1)
-    print(data)
+    
 
     # End code here
 
