@@ -21,25 +21,26 @@ def read_crit_size_params(file_name):
 
 
 
-def read_excel_data(file_name):
+def read_excel_data(file_name, sheet='raw', col_letters=['L', 'N']):
     """
     Reads excel data from the file with the given name, extracting the
-    columns "Tcode" and "idx" from the "raw" sheet.
+    columns specified by their Excel column letters from the "raw" sheet.
 
     Parameters:
     file_name (str): The name of the excel file to read.
+    col_letters (list): A list of Excel column letters to extract.
 
     Returns:
-    pandas.DataFrame: A dataframe containing the "Tcode" and "idx" columns
+    pandas.DataFrame: A dataframe containing the specified columns
     from the "raw" sheet.
     """
 
-    df = pd.read_excel(file_name, sheet_name='raw', usecols=['Tcode', 'idx'])
+    col_indices = [ord(col) - ord('A') for col in col_letters]
+    df = pd.read_excel(file_name, sheet_name=sheet, usecols=col_indices)
 
     return df
 
-
-def clone_sizes(tcode, df):
+def clone_sizes(tcode, df, no_tcode=False, id="idx"):
     """
     Returns the clone sizes for the given Tcode in the provided dataframe.
     
@@ -50,9 +51,11 @@ def clone_sizes(tcode, df):
     Returns:
     numpy.ndarray: An array containing the sizes of the clones for the given Tcode.
     """
-
-    df_tcode = df.query('Tcode == @tcode')
-    idx = df_tcode['idx'].values
+    if not no_tcode:
+        df_tcode = df.query('Tcode == @tcode')
+        idx = df_tcode['idx'].values
+    else:
+        idx = df[id].values
     clones_and_sizes = Counter(idx)  # This is a Dict.
     sizes = np.array(list(clones_and_sizes.values()))
 
@@ -77,7 +80,7 @@ def clone_size_distribution(sizes):
     return np.arange(len(dist)) + 1, dist/sum(dist)
  
 
-def ccdf_at_tcode(tcode, df):
+def ccdf_at_tcode(tcode, df, no_tcode=False, id="idx"):
     """
     Computes the complementary cumulative distribution function (CCDF) for a
     given Tcode in the provided dataframe.
@@ -91,7 +94,7 @@ def ccdf_at_tcode(tcode, df):
     sizes, and the second array contains the corresponding CCDF values.
     """
 
-    measured_sizes = clone_sizes(tcode, df)
+    measured_sizes = clone_sizes(tcode, df, no_tcode=no_tcode, id=id)
     sizes, dist = clone_size_distribution(measured_sizes)
     ccdf = 1 - np.cumsum(dist[1:])
 
