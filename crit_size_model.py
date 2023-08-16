@@ -53,7 +53,7 @@ if __name__ == '__main__':
         file.write(f"tcode, birth_rate, delta, n_crit, r_score\n")
         
         for tcode in tcodes:
-            best_rscore, bestcritsize = (0, 1)
+            best_rscore = 0
 
             for n_crit in np.arange(1, 100)*1.0:
                 t = [24, 24, 3*24, 3*24, 6*24, 6*24, 13*24, 13*24][tcode-1]
