@@ -53,27 +53,31 @@ if __name__ == '__main__':
         file.write(f"tcode, birth_rate, delta, n_crit, r_score\n")
         
         for tcode in tcodes:
+            best_rscore, bestcritsize = (0, 1)
 
-            t = [24, 24, 3*24, 3*24, 6*24, 6*24, 13*24, 13*24][tcode-1]
-            data = an.read_excel_data(datalocation)
-            ndata, ccdfdata = an.ccdf_at_tcode(tcode, data)
-            bounds = ([0, 0], [10, 100])  # Tuneable.
+            for n_crit in np.arange(1, 100)*1.0:
+                t = [24, 24, 3*24, 3*24, 6*24, 6*24, 13*24, 13*24][tcode-1]
+                data = an.read_excel_data(datalocation)
+                ndata, ccdfdata = an.ccdf_at_tcode(tcode, data)
+                bounds = ([0, 0], [10, 100])  # Tuneable.
 
-            n_crit = n_critical_values[tcode-1]
+                print(f"\n Processing tcode {tcode}, with initial params {initial_guess[0]}, {initial_guess[1]}, {n_crit}\n")
 
-            print(f"\n Processing tcode {tcode}, with initial params {initial_guess[0]}, {initial_guess[1]}, {n_crit}\n")
+                params, cov = estimate_parameters(t, ndata, ccdfdata, n_crit, initial_guess, bounds)
+                r2 = an.r_score(lambda n, birth_rate, delta: np.log(cdn.ccdfunc(n, [birth_rate, delta, n_crit], t)), params, ndata, np.log(ccdfdata))
 
-            params, cov = estimate_parameters(t, ndata, ccdfdata, n_crit, initial_guess, bounds)
-            r2 = an.r_score(lambda n, birth_rate, delta: np.log(cdn.ccdfunc(n, [birth_rate, delta, n_crit], t)), params, ndata, np.log(ccdfdata))
+                print(f"\n Params at tcode {tcode} and n crit {n_crit}: {params}, with score {r2}\n")
+                file.write(f"{tcode}, {params[0]}, {params[1]}, {n_crit}, {r2}\n")
 
-            print(f"\n Params at tcode {tcode} and n crit {n_crit}: {params}, with score {r2}\n")
-            file.write(f"{tcode}, {params[0]}, {params[1]}, {n_crit}, {r2}\n")
+                if best_rscore < r2:
+                    best_rscore = r2
+                    bestparams = [params[0], params[1], n_crit]
 
             fig = plt.figure(figsize=(8, 6))
             fig.clf()
             ax = fig.add_subplot(111)
             ax.plot(ndata, ccdfdata, 'o', label='CCDF observada')
-            ax.plot(ndata, cdn.ccdfunc(ndata, [params[0], params[1], n_crit], t), label='Ajuste modelo')
+            ax.plot(ndata, cdn.ccdfunc(ndata, bestparams, t), label='Ajuste modelo')
             ax.set_title(f"t: {t} [Hrs], EGF = {-1 + 2*(tcode % 2)}")
             ax.set_yscale('log')
             ax.set_xlabel('Tamaño')
