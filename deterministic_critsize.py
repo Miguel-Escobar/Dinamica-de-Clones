@@ -8,7 +8,7 @@ from scipy.optimize import curve_fit
 
 def estimate_parameters(t, ndata, ccdfdata, n_crit, initial_guess, bounds):
 
-    params, cov = curve_fit(lambda n, birth_rate, delta: np.log(cdn.ccdfunc(n, [birth_rate, delta, n_crit], t)), ndata, np.log(ccdfdata),
+    params, cov = curve_fit(lambda n, birth_rate, delta: np.log(cdn.deterministic_critsize_ccdf(n, birth_rate, delta, n_crit, t)), ndata, np.log(ccdfdata),
                             p0=initial_guess,
                             bounds=bounds,
                             max_nfev=10_000,
@@ -19,13 +19,6 @@ def estimate_parameters(t, ndata, ccdfdata, n_crit, initial_guess, bounds):
                             x_scale=[1, 1])  # Not sure if this does anything.
 
     return params, cov
-
-
-def func_to_optimize(birth_rate, delta, n_crit, t, ndata, ccdfdata):
-
-    return np.sum((np.log(cdn.ccdfunc(ndata, [birth_rate, delta, n_crit], t)) - np.log(ccdfdata))**2)
-
-
 
 if __name__ == '__main__':
 
@@ -51,7 +44,7 @@ if __name__ == '__main__':
     with open('critsize_params.csv', 'w') as file:
 
         file.write(f"tcode, birth_rate, delta, n_crit, r_score\n")
-        
+
         for tcode in tcodes:
 
             t = [24, 24, 3*24, 3*24, 6*24, 6*24, 13*24, 13*24][tcode-1]
@@ -64,7 +57,7 @@ if __name__ == '__main__':
             print(f"\n Processing tcode {tcode}, with initial params {initial_guess[0]}, {initial_guess[1]}, {n_crit}\n")
 
             params, cov = estimate_parameters(t, ndata, ccdfdata, n_crit, initial_guess, bounds)
-            r2 = an.r_score(lambda n, birth_rate, delta: np.log(cdn.ccdfunc(n, [birth_rate, delta, n_crit], t)), params, ndata, np.log(ccdfdata))
+            r2 = an.r_score(lambda n, birth_rate, delta: np.log(cdn.deterministic_critsize_ccdf(n, birth_rate, delta, n_crit, t)), params, ndata, np.log(ccdfdata))
 
             print(f"\n Params at tcode {tcode} and n crit {n_crit}: {params}, with score {r2}\n")
             file.write(f"{tcode}, {params[0]}, {params[1]}, {n_crit}, {r2}\n")
@@ -81,14 +74,3 @@ if __name__ == '__main__':
             ax.legend()
             fig.tight_layout()
             fig.savefig(f"{datalocation.replace('Data/', '').replace('.xlsm', '')} images/critsize model/tcodefit_{tcode}.png", dpi=600)
-
-    # End code here
-
-    # # Profiling boilerplate:
-
-    # profiler.disable()
-    # s = io.StringIO()
-    # stats = pstats.Stats(profiler, stream=s).sort_stats('tottime')
-    # stats.print_stats()
-    # with open('test.txt', 'w+') as f:
-    #     f.write(s.getvalue())
